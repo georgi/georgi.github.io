@@ -154,176 +154,86 @@ package. &lt;/p&gt;
     <published>29 Jan 13 00:00</published>
   </entry>
   <entry>
-    <id>http://www.matthias-georgi.de2013_01_12_how-to-write-a-blog-engine-in-haskell-part-1.html</id>
-    <title type="text">How to write a blog engine in Haskell Part 1</title>
-    <updated>12 Jan 13 00:00</updated>
-    <content type="html">&lt;p&gt;I really like to evaluate programming languages based on their
-practical value and one of the fun tasks is to write a small static
-file blog engine. The engine just converts a bunch of markdown files
-which are sorted into folders by month and year to html files given a
-set of simple templates.&lt;/p&gt;
+    <id>http://www.matthias-georgi.de2008_09_28_quick-guide-for-passenger-on-ubuntu-hardy.html</id>
+    <title type="text">Quick Guide for Passenger on Ubuntu Hardy</title>
+    <updated>28 Sep 08 00:00</updated>
+    <content type="html">&lt;p&gt;This is a short guide for installing &lt;a href=&quot;http://www.modrails.com/&quot;&gt;Phusion Passenger&lt;/a&gt; on Ubuntu
+Hardy. This includes the installation of Ruby 1.8.6, Apache 2.2.8, 
+MySQL 5.0.51a, Git 1.5.4 and Rails 2.1.1.&lt;/p&gt;
 
-&lt;h2&gt;Top level structure&lt;/h2&gt;
+&lt;h3&gt;Essential Build Tools&lt;/h3&gt;
 
-&lt;p&gt;Basically the rendering of blog posts can be done in three steps:&lt;/p&gt;
+&lt;p&gt;First we need to install the compiler toolchain (make, gcc and libc).&lt;/p&gt;
 
-&lt;ul&gt;
-&lt;li&gt;Find all files that contain blog posts&lt;/li&gt;
-&lt;li&gt;Read the markdown files into records&lt;/li&gt;
-&lt;li&gt;Render each file to html and write to disk&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;In Haskell these steps could be written as:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;writeBlog :: IO ()
-writeBlog = do
-  files &amp;lt;- findFiles &amp;quot;posts&amp;quot;
-  posts &amp;lt;- mapM readPost files
-  mapM_ writePost posts
+&lt;pre&gt;&lt;code&gt;$ apt-get install build-essential
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;When working inside the IO monad, you will use &lt;code&gt;mapM&lt;/code&gt; and &lt;code&gt;mapM_&lt;/code&gt;
-quite often, similar to &lt;code&gt;map&lt;/code&gt; they have following type signatures:&lt;/p&gt;
+&lt;h3&gt;Git&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;mapM :: Monad m =&amp;gt; (a -&amp;gt; m b) -&amp;gt; [a] -&amp;gt; m [b]
-mapM_ :: Monad m =&amp;gt; (a -&amp;gt; m b) -&amp;gt; [a] -&amp;gt; m ()
+&lt;p&gt;This guide is based on Git, so we install the git package:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ apt-get install git-core
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;They apply a monadic operation &lt;code&gt;a -&amp;gt; m b&lt;/code&gt; to each element of a list
-and either you want to keep the result of each operation (mapM) or not
-(mapM_).&lt;/p&gt;
+&lt;p&gt;If you want to host a git repository on this machine, initialize a new
+repository:&lt;/p&gt;
 
-&lt;p&gt;Interestingly there is a more generalized version in &lt;code&gt;Data.Traversable&lt;/code&gt;:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;(Monad m, Traversable t) =&amp;gt; (a -&amp;gt; m b) -&amp;gt; t a -&amp;gt; m (t b)
+&lt;pre&gt;&lt;code&gt;$ mkdir /var/git
+$ mkdir /var/git/myapp
+$ cd /var/git/myapp
+$ git --bare init
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;This function applies the monadic operation to anything that is
-traversable. So you could build a tree data type and declare it as
-instance of &lt;code&gt;Data.Traversable&lt;/code&gt; and use this function to apply the
-operation while maintaining the tree structure. For example a tree
-of files would be converted into a tree of blog posts.&lt;/p&gt;
+&lt;p&gt;Now you can push your application code from your local machine to your
+repository:&lt;/p&gt;
 
-&lt;h2&gt;Find files&lt;/h2&gt;
-
-&lt;p&gt;So the first step in the blog rendering process would be to find all
-files containing a post. So I created a folder named &lt;code&gt;posts&lt;/code&gt; which
-contains folders for each year, which in turn contain folders for each
-month, which finally contain all the blog posts.&lt;/p&gt;
-
-&lt;p&gt;What we want now is the same as the UNIX command &lt;code&gt;find posts -type f&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;This can be done by looking at the entries of a folder and entering
-each sub folder to examine its contents. When we find a file, we
-collect it into a result list, which will contain all files
-eventually.&lt;/p&gt;
-
-&lt;p&gt;When dealing with tree structures like a file system, recursion is an
-elegant alternative to iteration. For each folder we find, the function
-should call itself recursively until it ends up at the bottom most
-level containing the files.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;findFiles :: FilePath -&amp;gt; IO [FilePath]
-findFiles path = do
-  isFile &amp;lt;- doesFileExist path
-  if isFile then
-      return [path]
-    else do
-      entries &amp;lt;- getEntries path
-      paths &amp;lt;- return $ map (\ entry -&amp;gt; path ++ &amp;quot;/&amp;quot; ++ entry) entries
-      files &amp;lt;- mapM findFiles paths
-      return $ concat files
-  where
-    getEntries filepath = do
-      contents &amp;lt;- getDirectoryContents filepath
-      return $ filter ((/= &amp;#39;.&amp;#39;) . head) contents
+&lt;pre&gt;&lt;code&gt;$ cd ~/myapp
+$ git remote add origin ssh://myserver.com/var/git/myapp
+$ git push origin master
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;&lt;code&gt;findFiles&lt;/code&gt; takes a &lt;code&gt;FilePath&lt;/code&gt; and returns all files found in this
-folder or its subfolders. When you pass a file it will just return a
-list with this one file.&lt;/p&gt;
+&lt;h3&gt;Ruby&lt;/h3&gt;
 
-&lt;p&gt;&lt;code&gt;getEntries&lt;/code&gt; is a small helper function which returns all entries of
-a folder without &amp;#39;.&amp;#39; and &amp;#39;..&amp;#39;.&lt;/p&gt;
+&lt;p&gt;We are going to install Ruby and all the essential ruby libraries.&lt;/p&gt;
 
-&lt;p&gt;The else branch works like this: it reads all entries of the folder,
-prepends the current path, recurses for each entry, collects the
-return values and flattens them into one big list.&lt;/p&gt;
-
-&lt;h2&gt;Reading posts into records&lt;/h2&gt;
-
-&lt;p&gt;The data type representing a post is super simple. It just contains
-the &lt;code&gt;folder&lt;/code&gt; (e.g. &amp;ldquo;posts/2012/12&amp;rdquo;), the &lt;code&gt;file&lt;/code&gt; (e.g. &lt;code&gt;post-title.md&lt;/code&gt;)
-and the &lt;code&gt;text&lt;/code&gt; of the post.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;data Post = Post { folder, file, text :: String };
+&lt;pre&gt;&lt;code&gt;$ apt-get install ruby ruby1.8-dev rubygems irb ri rdoc rake libruby libruby-extras
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;&lt;code&gt;readPost&lt;/code&gt; therefore takes a &lt;code&gt;FilePath&lt;/code&gt; and reads the file contents,
-decomposing the path name into &lt;code&gt;year&lt;/code&gt;, &lt;code&gt;month&lt;/code&gt; and &lt;code&gt;filename&lt;/code&gt;, which we
-feed into the record constructor.&lt;/p&gt;
+&lt;h3&gt;Gem Executable Path&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;readPost :: FilePath -&amp;gt; IO Post
-readPost path = do
-  s &amp;lt;- readFile path
-  let [_, year, month, filename] = splitOn &amp;quot;/&amp;quot; path in
-    return Post { folder = year ++ &amp;quot;/&amp;quot; ++ month, file = filename, text = s }
+&lt;p&gt;Strangely the &lt;em&gt;rubygems&lt;/em&gt; package does not setup the path for
+executables, so we add the following line to &lt;code&gt;/etc/profile&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;export PATH=/var/lib/gems/1.8/bin:$PATH
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;&lt;code&gt;splitOn&lt;/code&gt; is taken from the &lt;code&gt;Data.List.Split&lt;/code&gt; module in the &lt;code&gt;split&lt;/code&gt; package
-and splits a string into a list of strings given a delimiter string.&lt;/p&gt;
+&lt;p&gt;To immediately use the new executable path, we source the profile file:&lt;/p&gt;
 
-&lt;h2&gt;To be continued&lt;/h2&gt;
-
-&lt;p&gt;Next part in this series will take a look at the actual rendering of blog
-post using the &lt;code&gt;sundown&lt;/code&gt; package.&lt;/p&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2013_01_12_how-to-write-a-blog-engine-in-haskell-part-1.html" type="text/html" />
-    <published>12 Jan 13 00:00</published>
-  </entry>
-  <entry>
-    <id>http://www.matthias-georgi.de2011_08_24_quick-guide-for-passenger-on-natty-narwhal.html</id>
-    <title type="text">Quick Guide for Passenger on Natty Narwhal</title>
-    <updated>24 Aug 11 00:00</updated>
-    <content type="html">&lt;p&gt;This is a short guide for installing &lt;a href=&quot;http://www.modrails.com/&quot;&gt;Phusion Passenger&lt;/a&gt; and &lt;a href=&quot;http://www.rubyenterpriseedition.com/&quot;&gt;Ruby
-Enterprise Editition&lt;/a&gt; on Ubuntu Natty Narwhal. Depending on your machine
-this will take 30-60 minutes on a fresh Ubuntu install.&lt;/p&gt;
-
-&lt;h3&gt;Installing build tools and libraries&lt;/h3&gt;
-
-&lt;p&gt;First we need to install the compiler toolchain (make, gcc and libc)
-and necessary libraries.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ apt-get install build-essential zlib1g-dev libssl-dev libreadline5-dev libmysqlclient-dev
+&lt;pre&gt;&lt;code&gt;$ . /etc/profile
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3&gt;Ruby Enterprise Edition&lt;/h3&gt;
+&lt;h3&gt;Apache&lt;/h3&gt;
 
-&lt;p&gt;We are going to download and compile Ruby Enterprise Edition. The
-installer asks for the target directory.  I would recommend to install
-into /opt/ruby unless you want to host different versions on this machine.&lt;/p&gt;
+&lt;p&gt;This is just a basic Apache install. We need the devlopment files for compiling passenger:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;$ wget http://rubyenterpriseedition.googlecode.com/files/ruby-enterprise-1.8.7-2011.03.tar.gz
-$ tar xzf ruby-enterprise-1.8.7-2011.03.tar.gz
-$ cd ruby-enterprise-1.8.7-2011.03
-$ ./installer
+&lt;pre&gt;&lt;code&gt;$ apt-get install apache2 apache2-prefork-dev
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Now we include the path to the ruby binaries in /etc/environment. It should look like this:&lt;/p&gt;
+&lt;h3&gt;MySQL&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;PATH=&amp;quot;/opt/ruby/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games&amp;quot;
+&lt;p&gt;I use MySQL, so I needed to install the server and client packages and
+the Ruby gem, which compiles a native extension:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ apt-get install mysql-server mysql-client
+$ gem install mysql
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;After relogin you should be able to type ruby -v and get a response like this:    &lt;/p&gt;
+&lt;h3&gt;Phusion Passenger&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;ruby 1.8.7 (2011-02-18 patchlevel 334) [x86_64-linux], MBARI 0x6770, Ruby Enterprise Edition 2011.03
-&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This is now the actual Passenger install, which consists of installing
+a gem and compiling the Apache module:&lt;/p&gt;
 
-&lt;h3&gt;Apache and Passenger&lt;/h3&gt;
-
-&lt;p&gt;We need to install Apache and necessary development libraries to compile Phusion Passenger. &lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ apt-get install libcurl4-openssl-dev apache2-mpm-prefork apache2-prefork-dev libapr1-dev libaprutil1-dev
+&lt;pre&gt;&lt;code&gt;$ gem install passenger
 $ passenger-install-apache2-module
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -334,26 +244,66 @@ module finished with an instruction for your httpd.conf. Depending on
 you passenger version, you will get something like this, which you add
 to your &lt;code&gt;/etc/apache2/httpd.conf&lt;/code&gt;:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;LoadModule passenger_module /opt/ruby/lib/ruby/gems/1.8/gems/passenger-3.0.7/ext/apache2/mod_passenger.so
-PassengerRoot /opt/ruby/lib/ruby/gems/1.8/gems/passenger-3.0.7
-PassengerRuby /opt/ruby/bin/ruby
+&lt;pre&gt;&lt;code&gt;LoadModule passenger_module /var/lib/gems/1.8/gems/passenger-2.0.3/ext/apache2/mod_passenger.so
+PassengerRoot /var/lib/gems/1.8/gems/passenger-2.0.3
+PassengerRuby /usr/bin/ruby1.8
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;If you browse to your url, you should see the standard apache &amp;ldquo;It works&amp;rdquo; page.&lt;/p&gt;
+&lt;p&gt;Additionally you probably want to enable &lt;em&gt;mod_rewrite&lt;/em&gt;, which is
+needed for Rails:&lt;/p&gt;
 
-&lt;h3&gt;MySQL&lt;/h3&gt;
-
-&lt;p&gt;The Ruby Enterprise Installer already compiled Ruby&amp;#39;s mysql client
-library, now we need the server and client.  &lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ apt-get install mysql-server mysql-client
+&lt;pre&gt;&lt;code&gt;$ a2enmod rewrite
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3&gt;Virtual host config&lt;/h3&gt;
+&lt;h3&gt;Installing your Rails app&lt;/h3&gt;
 
-&lt;p&gt;Adding a virtual host for your rails application is easy. Assuming
-that your application resides in /var/www/myapp create a file named
-&lt;code&gt;/etc/apache2/sites-available/myapp&lt;/code&gt; and fill in :&lt;/p&gt;
+&lt;p&gt;We create a app folder in &lt;code&gt;/var/www&lt;/code&gt; and checkout the source from our
+git repository:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cd /var/www
+$ mkdir myapp
+$ cd myapp
+$ git init
+$ git remote add origin /var/git/myapp
+$ git pull origin master
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4&gt;Installing Rails&lt;/h4&gt;
+
+&lt;p&gt;We don&amp;#39;t install Rails as Gem, because your application should be
+pinned to a specific Rails version. Git submodules allow you to embed
+a foreign repository in your source tree. &lt;/p&gt;
+
+&lt;p&gt;We are now going to link the Rails repository to &lt;code&gt;vendor/rails&lt;/code&gt; and
+checking out Version 2.1.1, finally we commit the submodule link to
+our repository:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cd /var/www/myapp/
+$ git submodule add git://github.com/rails/rails.git vendor/rails
+$ cd vendor/rails
+$ git checkout v2.1.1
+$ cd ../..
+$ git commit -m &amp;#39;linked rails as submodule&amp;#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Probably you need to setup your database:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ mysaladmin create myapp_production
+$ mysaladmin create myapp_development
+$ mysaladmin create myapp_test
+$ rake db:migrate
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now your Rails app should be able to run as a Webrick Server:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./script/server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Virtual host&lt;/h3&gt;
+
+&lt;p&gt;Adding a virtual host for your rails application is now super easy
+thanks to Passenger. Create a file named
+&lt;code&gt;/etc/apache2/sites-available/myapp&lt;/code&gt;:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;&amp;lt;VirtualHost *:80&amp;gt;
     ServerName myserver.com
@@ -371,184 +321,47 @@ $ a2ensite myapp
 
 &lt;pre&gt;&lt;code&gt;$ /etc/init.d/apache2 restart
 &lt;/code&gt;&lt;/pre&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2011_08_24_quick-guide-for-passenger-on-natty-narwhal.html" type="text/html" />
-    <published>24 Aug 11 00:00</published>
-  </entry>
-  <entry>
-    <id>http://www.matthias-georgi.de2011_06_22_vtouch-control-ableton-live-in-a-webbrowser.html</id>
-    <title type="text">vTouch - Control Ableton Live in a Webbrowser</title>
-    <updated>22 Jun 11 00:00</updated>
-    <content type="html">&lt;p&gt;VTouch is a multitouch browser frontend for Ableton Live. Inside your
-webbrowser you can control clip triggering, volume, send and return
-levels, mute, solo, record states. This works also on the network, so
-you can connect your mobile phone, iPads or android tablets easily by
-just browsing to you local webserver.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://www.matthias-georgi.de/images/vtouch.gif&quot; alt=&quot;vTouch&quot;&gt;&lt;/p&gt;
+&lt;h3&gt;User authentication&lt;/h3&gt;
 
-&lt;h3&gt;Screencast&lt;/h3&gt;
+&lt;p&gt;In case your Rails app is not meant to be seen on public, I recommend
+protecting it with HTTP Authentication.&lt;/p&gt;
 
-&lt;iframe width=&quot;425&quot; height=&quot;349&quot; src=&quot;http://www.youtube.com/embed/qFmiIcgRIao&quot; frameborder=&quot;0&quot; allowfullscreen&gt;&lt;/iframe&gt;
+&lt;p&gt;Create a password file:&lt;/p&gt;
 
-&lt;h3&gt;About the Hack&lt;/h3&gt;
-
-&lt;p&gt;Ableton Live is an digital audio workstation, which is well suited for
-live performances. Lots of parameters can be manipulated, midi or
-audio loops can be triggered. Unfortunately it is cumbersome to use
-this software with a touch device. A user interface specifically
-designed to be used on multitouch devices, which is also portable
-across platforms, offers many benefits and possibilities. Imagine a
-whole band jamming on iPads with ohne live setup over a wireless
-network.&lt;/p&gt;
-
-&lt;h3&gt;Technology used&lt;/h3&gt;
-
-&lt;p&gt;The frontend is rendered on HTML5 Canvas and communicates with a
-nodejs server via websockets. On the backend the webserver talks to a
-running ableton live instance and sends updates to all connected
-clients.&lt;/p&gt;
-
-&lt;p&gt;The canvas frontend is supported on all modern browsers including
-apple mobile safari and android browsers. We created a small widget
-library named canvas.ui to take care of multitouch events, rendering
-and layout management.&lt;/p&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2011_06_22_vtouch-control-ableton-live-in-a-webbrowser.html" type="text/html" />
-    <published>22 Jun 11 00:00</published>
-  </entry>
-  <entry>
-    <id>http://www.matthias-georgi.de2011_06_11_emacs-dark-theme.html</id>
-    <title type="text">Emacs Dark Theme</title>
-    <updated>11 Jun 11 00:00</updated>
-    <content type="html">&lt;p&gt;Recently I updated my Emacs setup and decided to go for a more minimal
-color theme. Especially on long coding nights you want a theme without
-distracting colors.&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://www.matthias-georgi.de/images/emacs-dark-theme.png&quot; alt=&quot;Emacs dark theme&quot;&gt;&lt;/p&gt;
-
-&lt;h3&gt;Configuration&lt;/h3&gt;
-
-&lt;p&gt;Just paste this code into your emacs condiguration:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt; (set-face-attribute &amp;#39;default nil
-                     :background &amp;quot;grey20&amp;quot;
-                     :foreground &amp;quot;grey90&amp;quot;)
-
- (set-face-attribute &amp;#39;modeline nil
-                     :background &amp;quot;grey10&amp;quot;
-                     :foreground &amp;quot;grey90&amp;quot;)
-
- (set-face-attribute &amp;#39;cursor nil
-                     :background &amp;quot;white&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-builtin-face nil
-                     :foreground &amp;quot;grey60&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-comment-face nil
-                     :foreground &amp;quot;grey60&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-constant-face nil
-                     :foreground &amp;quot;grey60&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-keyword-face nil
-                     :foreground &amp;quot;white&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-string-face nil
-                     :foreground &amp;quot;white&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-variable-name-face nil
-                     :foreground &amp;quot;lightblue&amp;quot;)
-
- (set-face-attribute &amp;#39;font-lock-function-name-face nil
-                     :foreground &amp;quot;lightblue&amp;quot;)
-
- (set-face-attribute &amp;#39;region nil
-                     :background &amp;quot;#111&amp;quot;)                    
+&lt;pre&gt;&lt;code&gt;htpasswd2 /var/www/myapp/config/auth myusername
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3&gt;Additional faces&lt;/h3&gt;
+&lt;p&gt;And add this to your virtual host configuration (Inside the
+VirtualHost section):&lt;/p&gt;
 
-&lt;p&gt;If you use speedbar or elscreen, you can set additional faces:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;(set-face-attribute &amp;#39;speedbar-file-face nil
-                    :foreground &amp;quot;white&amp;quot;)
-
-(set-face-attribute &amp;#39;elscreen-tab-background-face nil
-                    :background &amp;quot;grey10&amp;quot;
-                    :foreground &amp;quot;grey90&amp;quot;)
-
-(set-face-attribute &amp;#39;elscreen-tab-control-face nil
-                    :background &amp;quot;grey20&amp;quot;
-                    :foreground &amp;quot;grey90&amp;quot;)
-
-(set-face-attribute &amp;#39;elscreen-tab-current-screen-face nil
-                    :background &amp;quot;grey20&amp;quot;
-                    :foreground &amp;quot;grey90&amp;quot;)
-
-(set-face-attribute &amp;#39;elscreen-tab-other-screen-face nil
-                    :background &amp;quot;grey30&amp;quot;
-                    :foreground &amp;quot;grey60&amp;quot;)
+&lt;pre&gt;&lt;code&gt;&amp;lt;Location /&amp;gt;
+    AuthType Basic
+    AuthName &amp;quot;My App&amp;quot;
+    AuthUserFile /var/www/myapp/config/auth
+    Require valid-user
+&amp;lt;/Location&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;Phusion Passenger simplifies the Installation of Rails applications
+significantly. I don&amp;#39;t have to worry about &lt;code&gt;mod_proxy&lt;/code&gt;,
+&lt;code&gt;mod_proxy_balancer&lt;/code&gt;, &lt;code&gt;mongrel&lt;/code&gt; and &lt;code&gt;mongrel_cluster&lt;/code&gt; or even
+FastCGI. This is &lt;strong&gt;definitely simpler&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;I have to mention, that Rails is just one option for your Ruby
+application. Setting up any other Ruby framework should be possible
+through the support of the &lt;a href=&quot;http://rack.rubyforge.org/&quot;&gt;Rack&lt;/a&gt; interface. &lt;/p&gt;
+
+&lt;p&gt;I really hope, that the specification of using one &lt;em&gt;rackup file&lt;/em&gt; and
+one &lt;em&gt;public folder&lt;/em&gt; will settle down as a standard for Ruby web
+applications, so that hosting companies will focus on supporting this
+standard and ruby developers don&amp;#39;t need to worry about finding support
+for their favorite web frameworks.&lt;/p&gt;
 </content>
-    <link href="http://www.matthias-georgi.de2011_06_11_emacs-dark-theme.html" type="text/html" />
-    <published>11 Jun 11 00:00</published>
-  </entry>
-  <entry>
-    <id>http://www.matthias-georgi.de2009_07_23_viewing-ri-in-a-web-browser.html</id>
-    <title type="text">Viewing RI in a web browser</title>
-    <updated>23 Jul 09 00:00</updated>
-    <content type="html">&lt;p&gt;I&amp;#39;m a big fan of the Firefox keyword search. For example I have
-keywords for &lt;a href=&quot;http://dict.leo.org&quot;&gt;LEO&lt;/a&gt;, &lt;a href=&quot;http://en.wikipedia.org&quot;&gt;Wikipedia&lt;/a&gt; and &lt;a href=&quot;http://www.nongnu.org/man2html&quot;&gt;Man pages&lt;/a&gt;. Sometimes I
-want to look up API documentation in Ruby and typing &lt;code&gt;ri camelize&lt;/code&gt;
-into the address bar and viewing the documentation as web page seems
-to be quite natural for me. So I wrote a quick and dirty cgi, which
-calls RI and outputs HTML.&lt;/p&gt;
-
-&lt;h3&gt;CGI script&lt;/h3&gt;
-
-&lt;p&gt;I&amp;#39;ve put the following code in file named
-&lt;code&gt;/usr/lib/cgi-bin/ri.b&lt;/code&gt;. This is the default location for cgi scripts
-on my system for Apache.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;#!/usr/bin/env ruby
-
-require &amp;#39;rdoc/ri/ri_driver&amp;#39;
-require &amp;#39;rubygems&amp;#39;
-
-print &amp;quot;Content-type: text/html\r\n\r\n&amp;quot;
-
-ARGV &amp;lt;&amp;lt; &amp;#39;-f&amp;#39; &amp;lt;&amp;lt; &amp;#39;html&amp;#39;
-
-ri = RiDriver.new
-
-print &amp;#39;&amp;lt;html&amp;gt;&amp;lt;body style=&amp;quot;width:600px; margin:auto; padding:20px&amp;quot;&amp;gt;&amp;#39;
-ri.process_args
-print &amp;#39;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;&amp;#39;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;This script does the same thing as if you typed &lt;code&gt;ri somequery -f
-html&lt;/code&gt;. I put some HTML around it to give it some style, but that&amp;#39;s it.&lt;/p&gt;
-
-&lt;h3&gt;The Keyword Search&lt;/h3&gt;
-
-&lt;p&gt;So I want to type &lt;code&gt;ri String.capitalize&lt;/code&gt; and the browser should send a
-request to &lt;code&gt;http://localhost/cgi-bin/ri.rb?String.capitalize&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Just add a new bookmark and give it the keyword &lt;code&gt;ri&lt;/code&gt; and use as url
-this one:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt; http://localhost/cgi-bin/ri.rb?%s
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Now we&amp;#39;re done. One thing I would like to improve is to add hyperlinks
-to the output. For example viewing the documentation of a class brings
-up all documented methods. Each of them should be a link to the actual
-documentation. Probably some monkey patching on the &lt;a href=&quot;http://rdoc.rubyforge.org/classes/RDoc/RI/HtmlFormatter.html&quot;&gt;HtmlFormatter&lt;/a&gt;
-class would do the job.&lt;/p&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2009_07_23_viewing-ri-in-a-web-browser.html" type="text/html" />
-    <published>23 Jul 09 00:00</published>
+    <link href="http://www.matthias-georgi.de2008_09_28_quick-guide-for-passenger-on-ubuntu-hardy.html" type="text/html" />
+    <published>28 Sep 08 00:00</published>
   </entry>
   <entry>
     <id>http://www.matthias-georgi.de2009_04_25_kontrol-a-micro-framework.html</id>
@@ -787,240 +600,6 @@ from your repo.&lt;/p&gt;
     <published>25 Apr 09 00:00</published>
   </entry>
   <entry>
-    <id>http://www.matthias-georgi.de2009_04_22_rackdav-web-authoring-for-rack.html</id>
-    <title type="text">RackDAV - Web Authoring for Rack</title>
-    <updated>22 Apr 09 00:00</updated>
-    <content type="html">&lt;p&gt;RackDAV is Handler for &lt;a href=&quot;http://github.com/chneukirchen/rack&quot;&gt;Rack&lt;/a&gt;, which allows content authoring over
-HTTP. RackDAV brings its own file backend, but other backends are
-possible by subclassing RackDAV::Resource.&lt;/p&gt;
-
-&lt;h2&gt;Install&lt;/h2&gt;
-
-&lt;p&gt;Just install the gem from github:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ gem sources -a http://gems.github.com
-$ sudo gem install georgi-rack_dav
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2&gt;Quickstart&lt;/h2&gt;
-
-&lt;p&gt;If you just want to share a folder over WebDAV, you can just start a
-simple server with:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ rack_dav
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;This will start a WEBrick server on port 3000, which you can connect
-to without authentication.&lt;/p&gt;
-
-&lt;h2&gt;Rack Handler&lt;/h2&gt;
-
-&lt;p&gt;Using RackDAV inside a rack application is quite easy. A simple rackup
-script looks like this:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;require &amp;#39;rubygems&amp;#39;
-require &amp;#39;rack_dav&amp;#39;
-
-use Rack::CommonLogger
-
-run RackDAV::Handler.new(&amp;#39;/path/to/docs&amp;#39;)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2&gt;Implementing your own WebDAV resource&lt;/h2&gt;
-
-&lt;p&gt;RackDAV::Resource is an abstract base class and defines an interface
-for accessing resources.&lt;/p&gt;
-
-&lt;p&gt;Each resource will be initialized with a path, which should be used to
-find the real resource.&lt;/p&gt;
-
-&lt;p&gt;RackDAV::Handler needs to be initialized with the actual resource class:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;RackDAV::Handler.new(:resource_class =&amp;gt; MyResource)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;RackDAV needs some information about the resources, so you have to
-implement following methods:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;children&lt;/strong&gt;: If this is a collection, return the child resources.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;collection?&lt;/strong&gt;: Is this resource a collection?&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;exist?&lt;/strong&gt;: Does this recource exist?&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;creation_date&lt;/strong&gt;: Return the creation time.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;last_modified&lt;/strong&gt;: Return the time of last modification.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;last_modified=(time)&lt;/strong&gt;: Set the time of last modification.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;etag&lt;/strong&gt;: Return an Etag, an unique hash value for this resource.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;content_type&lt;/strong&gt;: Return the mime type of this resource.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;content_length&lt;/strong&gt;: Return the size in bytes for this resource.&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Most importantly you have to implement the actions, which are called
-to retrieve and change the resources:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;get(request, response)&lt;/strong&gt;: Write the content of the resource to the response.body.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;put(request, response)&lt;/strong&gt;: Save the content of the request.body.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;post(request, response)&lt;/strong&gt;: Usually forbidden.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;delete&lt;/strong&gt;: Delete this resource.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;copy(dest)&lt;/strong&gt;: Copy this resource to given destination resource.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;move(dest)&lt;/strong&gt;: Move this resource to given destination resource.&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;make_collection&lt;/strong&gt;: Create this resource as collection.&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Note, that it is generally possible, that a resource object is
-instantiated for a not yet existing resource.&lt;/p&gt;
-
-&lt;p&gt;For inspiration you should have a look at the FileResource
-implementation. Please let me now, if you are going to implement a new
-type of resource.&lt;/p&gt;
-
-&lt;h3&gt;RackDAV on GitHub&lt;/h3&gt;
-
-&lt;p&gt;Download or fork the project on its &lt;a href=&quot;http://github.com/georgi/rack_dav&quot;&gt;Github page&lt;/a&gt;&lt;/p&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2009_04_22_rackdav-web-authoring-for-rack.html" type="text/html" />
-    <published>22 Apr 09 00:00</published>
-  </entry>
-  <entry>
-    <id>http://www.matthias-georgi.de2009_01_12_git-store-using-git-as-versioned-data-store-in-ruby.html</id>
-    <title type="text">Git Store - using Git as versioned data store in Ruby</title>
-    <updated>12 Jan 09 00:00</updated>
-    <content type="html">&lt;p&gt;GitStore is a small Ruby library, providing an easy interface to the
-version control system &lt;a href=&quot;http://git.or.cz/&quot;&gt;Git&lt;/a&gt;. It aims to use Git as a versioned
-data store much like the well known PStore. Basically GitStore checks
-out the repository into a in-memory representation, which can be
-modified and finally committed. In this way your data is stored in a
-folder structure and can be checked out and examined, but the
-application may access the data in a convenient hash-like way. This
-library is based on &lt;a href=&quot;http://github.com/mojombo/grit&quot;&gt;Grit&lt;/a&gt;, the main technology behind &lt;a href=&quot;http://github.com/&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;
-GitStore has its own &lt;a href=&quot;/gitstore&quot;&gt;project page&lt;/a&gt; now!
-Please look for current information there.
-&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3&gt;Installation&lt;/h3&gt;
-
-&lt;p&gt;GitStore can be installed as gem easily, if you have RubyGems 1.2.0:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ gem sources -a http://gems.github.com (you only have to do this once)
-$ sudo gem install mojombo-grit georgi-git_store
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;If you don&amp;#39;t have RubyGems 1.2.0, you may download the package on the
-&lt;a href=&quot;http://www.newartisans.com/blog_files/git.versioned.data.store.php&quot;&gt;github page&lt;/a&gt; and build the gem yourself:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ gem build git_store.gemspec
-$ sudo gem install git_store
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Usage Example&lt;/h3&gt;
-
-&lt;p&gt;First thing you should do, is to initialize a new git repository.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ mkdir test
-$ cd test
-$ git init
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Now you can instantiate a GitStore instance and store some data. The
-data will be serialized depending on the file extension. So for YAML
-storage you can use the &amp;#39;yml&amp;#39; extension:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;class WikiPage &amp;lt; Struct.new(:author, :title, :body); end
-class User &amp;lt; Struct.new(:name); end
-
-store = GitStore.new(&amp;#39;.&amp;#39;)
-
-store[&amp;#39;users/matthias.yml&amp;#39;] = User.new(&amp;#39;Matthias&amp;#39;)
-store[&amp;#39;pages/home.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Home&amp;#39;, &amp;#39;This is the home page...&amp;#39;)
-
-store.commit &amp;#39;Added user and page&amp;#39;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Note that directories will be created automatically.&lt;/p&gt;
-
-&lt;p&gt;Another way to access a path is:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;store[&amp;#39;config&amp;#39;, &amp;#39;wiki.yml&amp;#39;] = { &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;My Personal Wiki&amp;#39; }
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Finally you can access the git store as a Hash of Hashes, but in this
-case you have to create the Tree objects manually:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;store[&amp;#39;users&amp;#39;] = GitStore::Tree.new
-store[&amp;#39;users&amp;#39;][&amp;#39;matthias.yml&amp;#39;] = User.new(&amp;#39;Matthias&amp;#39;)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Where is my data?&lt;/h3&gt;
-
-&lt;p&gt;When you call the &lt;code&gt;commit&lt;/code&gt; method, your data is written back straight
-into the git repository. No intermediate file representation. So if
-you want to look into your data, you can use some git browser like
-&lt;a href=&quot;http://www.kernel.org/pub/software/scm/git/docs/git-gui.html&quot;&gt;git-gui&lt;/a&gt; or just checkout the files:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ git checkout
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Iteration&lt;/h3&gt;
-
-&lt;p&gt;Iterating over the data objects is quite easy. Furthermore you can
-iterate over trees and subtrees, so you can partition your data in a
-meaningful way. For example you may separate the config files and the
-pages of a wiki:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;store[&amp;#39;pages/home.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Home&amp;#39;, &amp;#39;This is the home page...&amp;#39;)
-store[&amp;#39;pages/about.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;About&amp;#39;, &amp;#39;About this site...&amp;#39;)
-store[&amp;#39;pages/links.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Links&amp;#39;, &amp;#39;Some useful links...&amp;#39;)
-store[&amp;#39;config/wiki.yml&amp;#39;] = { &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;My Personal Wiki&amp;#39; }
-
-store.each { |obj| ... } # yields all pages and the config hash
-store[&amp;#39;pages&amp;#39;].each { |page| ... } # yields only the pages
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Serialization&lt;/h3&gt;
-
-&lt;p&gt;Serialization is dependent on the filename extension. You can add more
-handlers if you like, the interface is like this:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;class YAMLHandler
-  def read(id, name, data)
-    YAML.load(data)
-  end
-
-  def write(data)
-    data.to_yaml
-  end    
-end
-
-GitStore::Handler[&amp;#39;yml&amp;#39;] = YAMLHandler.new
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Shinmun uses its own handler for files with &lt;code&gt;md&lt;/code&gt; extension:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;class PostHandler
-  def read(name, data)
-    Post.new(:filename =&amp;gt; name, :src =&amp;gt; data)
-  end
-
-  def write(post)
-    post.dump
-  end    
-end
-
-GitStore::Handler[&amp;#39;md&amp;#39;] = PostHandler.new
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Related Work&lt;/h3&gt;
-
-&lt;p&gt;John Wiegley already has done &lt;a href=&quot;http://www.newartisans.com/blog_files/git.versioned.data.store.php&quot;&gt;something similar for Python&lt;/a&gt;. His
-implementation has its own git interface, GitStore uses the wonderful
-&lt;a href=&quot;http://github.com/mojombo/grit&quot;&gt;Grit&lt;/a&gt; library.&lt;/p&gt;
-</content>
-    <link href="http://www.matthias-georgi.de2009_01_12_git-store-using-git-as-versioned-data-store-in-ruby.html" type="text/html" />
-    <published>12 Jan 09 00:00</published>
-  </entry>
-  <entry>
     <id>http://www.matthias-georgi.de2008_12_24_using-javascript-templates-for-a-delicious-sidebar.html</id>
     <title type="text">Using Javascript Templates for a Delicious Sidebar</title>
     <updated>24 Dec 08 00:00</updated>
@@ -1162,5 +741,1628 @@ consists only of 130 lines of code.&lt;/p&gt;
 </content>
     <link href="http://www.matthias-georgi.de2008_12_24_using-javascript-templates-for-a-delicious-sidebar.html" type="text/html" />
     <published>24 Dec 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2011_08_24_quick-guide-for-passenger-on-natty-narwhal.html</id>
+    <title type="text">Quick Guide for Passenger on Natty Narwhal</title>
+    <updated>24 Aug 11 00:00</updated>
+    <content type="html">&lt;p&gt;This is a short guide for installing &lt;a href=&quot;http://www.modrails.com/&quot;&gt;Phusion Passenger&lt;/a&gt; and &lt;a href=&quot;http://www.rubyenterpriseedition.com/&quot;&gt;Ruby
+Enterprise Editition&lt;/a&gt; on Ubuntu Natty Narwhal. Depending on your machine
+this will take 30-60 minutes on a fresh Ubuntu install.&lt;/p&gt;
+
+&lt;h3&gt;Installing build tools and libraries&lt;/h3&gt;
+
+&lt;p&gt;First we need to install the compiler toolchain (make, gcc and libc)
+and necessary libraries.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ apt-get install build-essential zlib1g-dev libssl-dev libreadline5-dev libmysqlclient-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Ruby Enterprise Edition&lt;/h3&gt;
+
+&lt;p&gt;We are going to download and compile Ruby Enterprise Edition. The
+installer asks for the target directory.  I would recommend to install
+into /opt/ruby unless you want to host different versions on this machine.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ wget http://rubyenterpriseedition.googlecode.com/files/ruby-enterprise-1.8.7-2011.03.tar.gz
+$ tar xzf ruby-enterprise-1.8.7-2011.03.tar.gz
+$ cd ruby-enterprise-1.8.7-2011.03
+$ ./installer
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we include the path to the ruby binaries in /etc/environment. It should look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;PATH=&amp;quot;/opt/ruby/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After relogin you should be able to type ruby -v and get a response like this:    &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ruby 1.8.7 (2011-02-18 patchlevel 334) [x86_64-linux], MBARI 0x6770, Ruby Enterprise Edition 2011.03
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Apache and Passenger&lt;/h3&gt;
+
+&lt;p&gt;We need to install Apache and necessary development libraries to compile Phusion Passenger. &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ apt-get install libcurl4-openssl-dev apache2-mpm-prefork apache2-prefork-dev libapr1-dev libaprutil1-dev
+$ passenger-install-apache2-module
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Apache configuration&lt;/h3&gt;
+
+&lt;p&gt;The compilation of the Passenger Apache
+module finished with an instruction for your httpd.conf. Depending on
+you passenger version, you will get something like this, which you add
+to your &lt;code&gt;/etc/apache2/httpd.conf&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;LoadModule passenger_module /opt/ruby/lib/ruby/gems/1.8/gems/passenger-3.0.7/ext/apache2/mod_passenger.so
+PassengerRoot /opt/ruby/lib/ruby/gems/1.8/gems/passenger-3.0.7
+PassengerRuby /opt/ruby/bin/ruby
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you browse to your url, you should see the standard apache &amp;ldquo;It works&amp;rdquo; page.&lt;/p&gt;
+
+&lt;h3&gt;MySQL&lt;/h3&gt;
+
+&lt;p&gt;The Ruby Enterprise Installer already compiled Ruby&amp;#39;s mysql client
+library, now we need the server and client.  &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ apt-get install mysql-server mysql-client
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Virtual host config&lt;/h3&gt;
+
+&lt;p&gt;Adding a virtual host for your rails application is easy. Assuming
+that your application resides in /var/www/myapp create a file named
+&lt;code&gt;/etc/apache2/sites-available/myapp&lt;/code&gt; and fill in :&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;VirtualHost *:80&amp;gt;
+    ServerName myserver.com
+    DocumentRoot /var/www/myapp/public
+&amp;lt;/VirtualHost&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we disable the default site and add our new virtual host:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ a2dissite default
+$ a2ensite myapp
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After restarting Apache your Rails application should run on Apache:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ /etc/init.d/apache2 restart
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2011_08_24_quick-guide-for-passenger-on-natty-narwhal.html" type="text/html" />
+    <published>24 Aug 11 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2009_07_23_viewing-ri-in-a-web-browser.html</id>
+    <title type="text">Viewing RI in a web browser</title>
+    <updated>23 Jul 09 00:00</updated>
+    <content type="html">&lt;p&gt;I&amp;#39;m a big fan of the Firefox keyword search. For example I have
+keywords for &lt;a href=&quot;http://dict.leo.org&quot;&gt;LEO&lt;/a&gt;, &lt;a href=&quot;http://en.wikipedia.org&quot;&gt;Wikipedia&lt;/a&gt; and &lt;a href=&quot;http://www.nongnu.org/man2html&quot;&gt;Man pages&lt;/a&gt;. Sometimes I
+want to look up API documentation in Ruby and typing &lt;code&gt;ri camelize&lt;/code&gt;
+into the address bar and viewing the documentation as web page seems
+to be quite natural for me. So I wrote a quick and dirty cgi, which
+calls RI and outputs HTML.&lt;/p&gt;
+
+&lt;h3&gt;CGI script&lt;/h3&gt;
+
+&lt;p&gt;I&amp;#39;ve put the following code in file named
+&lt;code&gt;/usr/lib/cgi-bin/ri.b&lt;/code&gt;. This is the default location for cgi scripts
+on my system for Apache.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#!/usr/bin/env ruby
+
+require &amp;#39;rdoc/ri/ri_driver&amp;#39;
+require &amp;#39;rubygems&amp;#39;
+
+print &amp;quot;Content-type: text/html\r\n\r\n&amp;quot;
+
+ARGV &amp;lt;&amp;lt; &amp;#39;-f&amp;#39; &amp;lt;&amp;lt; &amp;#39;html&amp;#39;
+
+ri = RiDriver.new
+
+print &amp;#39;&amp;lt;html&amp;gt;&amp;lt;body style=&amp;quot;width:600px; margin:auto; padding:20px&amp;quot;&amp;gt;&amp;#39;
+ri.process_args
+print &amp;#39;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;&amp;#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This script does the same thing as if you typed &lt;code&gt;ri somequery -f
+html&lt;/code&gt;. I put some HTML around it to give it some style, but that&amp;#39;s it.&lt;/p&gt;
+
+&lt;h3&gt;The Keyword Search&lt;/h3&gt;
+
+&lt;p&gt;So I want to type &lt;code&gt;ri String.capitalize&lt;/code&gt; and the browser should send a
+request to &lt;code&gt;http://localhost/cgi-bin/ri.rb?String.capitalize&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Just add a new bookmark and give it the keyword &lt;code&gt;ri&lt;/code&gt; and use as url
+this one:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt; http://localhost/cgi-bin/ri.rb?%s
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we&amp;#39;re done. One thing I would like to improve is to add hyperlinks
+to the output. For example viewing the documentation of a class brings
+up all documented methods. Each of them should be a link to the actual
+documentation. Probably some monkey patching on the &lt;a href=&quot;http://rdoc.rubyforge.org/classes/RDoc/RI/HtmlFormatter.html&quot;&gt;HtmlFormatter&lt;/a&gt;
+class would do the job.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2009_07_23_viewing-ri-in-a-web-browser.html" type="text/html" />
+    <published>23 Jul 09 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_10_22_patroon-a-javascript-template-engine.html</id>
+    <title type="text">Patroon - a Javascript Template Engine</title>
+    <updated>22 Oct 08 00:00</updated>
+    <content type="html">&lt;p&gt;Patroon is a template engine written in Javascript in about 100 lines
+of code. It takes existing DOM nodes annotated with CSS classes and
+expand a data object according to simple rules. Additionally you may
+use traditional string interpolation inside attribute values and text
+nodes.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;
+Patroon has its own &lt;a href=&quot;/patroon&quot;&gt;project page&lt;/a&gt; now!
+Please look for current information there.
+&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Example&lt;/h3&gt;
+
+&lt;p&gt;Comments in this blog are stored as a list of JSON objects, I wrote about it &lt;a href=&quot;http://www.matthias-georgi.de/commenting-system-with-lightweight-json-store.html&quot;&gt;here&lt;/a&gt;. So think about a data object like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;var data = { 
+  comment: [{
+    date: &amp;quot;2008-09-07 12:28:33&amp;quot;, 
+    name: &amp;quot;David Beckham&amp;quot;,
+    website: &amp;quot;beckham.com&amp;quot;,
+    text: &amp;quot;I watched the euro finals on tv...&amp;quot; 
+  }, { 
+    date: &amp;quot;2008-09-07 14:28:33&amp;quot;, 
+    name: &amp;quot;Tuncay&amp;quot;,
+    website: &amp;quot;&amp;quot;,
+    text: &amp;quot;Me too&amp;quot;
+  }]
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This data will be expanded with help of following template:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;comments&amp;quot;&amp;gt;  
+  &amp;lt;div id=&amp;quot;comments-template&amp;quot;&amp;gt;
+    &amp;lt;div class=&amp;quot;comment&amp;quot;&amp;gt;
+      &amp;lt;div class=&amp;quot;_ top&amp;quot;&amp;gt;
+        &amp;lt;a class=&amp;quot;_&amp;quot; href=&amp;quot;{website}&amp;quot;&amp;gt;{name}&amp;lt;/a&amp;gt; said
+        &amp;lt;a class=&amp;quot;_&amp;quot; title=&amp;quot;{time}&amp;quot;&amp;gt;&amp;lt;/a&amp;gt;:
+      &amp;lt;/div&amp;gt;
+      &amp;lt;div class=&amp;quot;text&amp;quot;&amp;gt;&amp;lt;/div&amp;gt;
+    &amp;lt;/div&amp;gt;   
+  &amp;lt;/div&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The javascript to actually execute this template looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// The comments template will be removed from the DOM!
+var template = new Template(&amp;#39;comments-template&amp;#39;);
+
+// template will result in a new DOM node
+var result = template.expand(data);
+
+// insert the resulting node into the comments container
+var container = document.getElementsByClassName(&amp;#39;comments&amp;#39;)[0];
+container.appendChild(result);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Using jQuery the code gets a bit cleaner:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// The comments template will be removed from the DOM!
+var template = new Template(&amp;#39;comments-template&amp;#39;);
+
+// Expand the template into the comments section
+$(&amp;#39;.comments&amp;#39;).expand(template, data);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Basic Rules&lt;/h3&gt;
+
+&lt;p&gt;There are 5 basic rules:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Strings and Numbers are inserted by innerHTML to the current node.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Arrays repeat the current node and process its elements recursively in same scope.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Objects trigger a class name lookup by property name. The value of each property is expanded recursively in new scope.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Code will be evaluated for text surounded with braces (Works also for attributes).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Processing child nodes will be triggered for nodes with a class attribute starting with &lt;code&gt;_&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I admit the last point is a bit quirky, but processing all child nodes per default is too expensive and too unpredictable. Maybe I will find a better way, but I don’t mind inserting these extra &lt;code&gt;_&lt;/code&gt; class names.&lt;/p&gt;
+
+&lt;h3&gt;Evaluation&lt;/h3&gt;
+
+&lt;p&gt;So speaking of the example data, this would mean following algorithm:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Find the first node with a class name of comment.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Repeat this node two times and recursively process the first and second comment.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Descend into the node with class &lt;code&gt;top&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Descend into the first link node.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Evaluate the code found in the &lt;em&gt;href&lt;/em&gt; attribute and in the text.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Descend into the second link node.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Evaluate the code found in the &lt;em&gt;title&lt;/em&gt; attribute.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Find the first node with the class &lt;code&gt;text&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Insert the the text of the comment into the found node.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that we are dealing with two scopes here: the global scope and the comment scope. The global scope just contains a name &lt;em&gt;comment&lt;/em&gt; and the comment scope contains the names &lt;code&gt;date&lt;/code&gt;, &lt;code&gt;name&lt;/code&gt;, &lt;code&gt;website&lt;/code&gt; and &lt;code&gt;text&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Download&lt;/h3&gt;
+
+&lt;p&gt;Download the script at my &lt;a href=&quot;http://github.com/georgi/patroon/tree/master&quot;&gt;github repository&lt;/a&gt;.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_10_22_patroon-a-javascript-template-engine.html" type="text/html" />
+    <published>22 Oct 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2011_06_22_vtouch-control-ableton-live-in-a-webbrowser.html</id>
+    <title type="text">vTouch - Control Ableton Live in a Webbrowser</title>
+    <updated>22 Jun 11 00:00</updated>
+    <content type="html">&lt;p&gt;VTouch is a multitouch browser frontend for Ableton Live. Inside your
+webbrowser you can control clip triggering, volume, send and return
+levels, mute, solo, record states. This works also on the network, so
+you can connect your mobile phone, iPads or android tablets easily by
+just browsing to you local webserver.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://www.matthias-georgi.de/images/vtouch.gif&quot; alt=&quot;vTouch&quot;&gt;&lt;/p&gt;
+
+&lt;h3&gt;Screencast&lt;/h3&gt;
+
+&lt;iframe width=&quot;425&quot; height=&quot;349&quot; src=&quot;http://www.youtube.com/embed/qFmiIcgRIao&quot; frameborder=&quot;0&quot; allowfullscreen&gt;&lt;/iframe&gt;
+
+&lt;h3&gt;About the Hack&lt;/h3&gt;
+
+&lt;p&gt;Ableton Live is an digital audio workstation, which is well suited for
+live performances. Lots of parameters can be manipulated, midi or
+audio loops can be triggered. Unfortunately it is cumbersome to use
+this software with a touch device. A user interface specifically
+designed to be used on multitouch devices, which is also portable
+across platforms, offers many benefits and possibilities. Imagine a
+whole band jamming on iPads with ohne live setup over a wireless
+network.&lt;/p&gt;
+
+&lt;h3&gt;Technology used&lt;/h3&gt;
+
+&lt;p&gt;The frontend is rendered on HTML5 Canvas and communicates with a
+nodejs server via websockets. On the backend the webserver talks to a
+running ableton live instance and sends updates to all connected
+clients.&lt;/p&gt;
+
+&lt;p&gt;The canvas frontend is supported on all modern browsers including
+apple mobile safari and android browsers. We created a small widget
+library named canvas.ui to take care of multitouch events, rendering
+and layout management.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2011_06_22_vtouch-control-ableton-live-in-a-webbrowser.html" type="text/html" />
+    <published>22 Jun 11 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2009_04_22_rackdav-web-authoring-for-rack.html</id>
+    <title type="text">RackDAV - Web Authoring for Rack</title>
+    <updated>22 Apr 09 00:00</updated>
+    <content type="html">&lt;p&gt;RackDAV is Handler for &lt;a href=&quot;http://github.com/chneukirchen/rack&quot;&gt;Rack&lt;/a&gt;, which allows content authoring over
+HTTP. RackDAV brings its own file backend, but other backends are
+possible by subclassing RackDAV::Resource.&lt;/p&gt;
+
+&lt;h2&gt;Install&lt;/h2&gt;
+
+&lt;p&gt;Just install the gem from github:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gem sources -a http://gems.github.com
+$ sudo gem install georgi-rack_dav
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2&gt;Quickstart&lt;/h2&gt;
+
+&lt;p&gt;If you just want to share a folder over WebDAV, you can just start a
+simple server with:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ rack_dav
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This will start a WEBrick server on port 3000, which you can connect
+to without authentication.&lt;/p&gt;
+
+&lt;h2&gt;Rack Handler&lt;/h2&gt;
+
+&lt;p&gt;Using RackDAV inside a rack application is quite easy. A simple rackup
+script looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;require &amp;#39;rubygems&amp;#39;
+require &amp;#39;rack_dav&amp;#39;
+
+use Rack::CommonLogger
+
+run RackDAV::Handler.new(&amp;#39;/path/to/docs&amp;#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2&gt;Implementing your own WebDAV resource&lt;/h2&gt;
+
+&lt;p&gt;RackDAV::Resource is an abstract base class and defines an interface
+for accessing resources.&lt;/p&gt;
+
+&lt;p&gt;Each resource will be initialized with a path, which should be used to
+find the real resource.&lt;/p&gt;
+
+&lt;p&gt;RackDAV::Handler needs to be initialized with the actual resource class:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;RackDAV::Handler.new(:resource_class =&amp;gt; MyResource)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RackDAV needs some information about the resources, so you have to
+implement following methods:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;children&lt;/strong&gt;: If this is a collection, return the child resources.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;collection?&lt;/strong&gt;: Is this resource a collection?&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;exist?&lt;/strong&gt;: Does this recource exist?&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;creation_date&lt;/strong&gt;: Return the creation time.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;last_modified&lt;/strong&gt;: Return the time of last modification.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;last_modified=(time)&lt;/strong&gt;: Set the time of last modification.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;etag&lt;/strong&gt;: Return an Etag, an unique hash value for this resource.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;content_type&lt;/strong&gt;: Return the mime type of this resource.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;content_length&lt;/strong&gt;: Return the size in bytes for this resource.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Most importantly you have to implement the actions, which are called
+to retrieve and change the resources:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;get(request, response)&lt;/strong&gt;: Write the content of the resource to the response.body.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;put(request, response)&lt;/strong&gt;: Save the content of the request.body.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;post(request, response)&lt;/strong&gt;: Usually forbidden.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;delete&lt;/strong&gt;: Delete this resource.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;copy(dest)&lt;/strong&gt;: Copy this resource to given destination resource.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;move(dest)&lt;/strong&gt;: Move this resource to given destination resource.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;make_collection&lt;/strong&gt;: Create this resource as collection.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note, that it is generally possible, that a resource object is
+instantiated for a not yet existing resource.&lt;/p&gt;
+
+&lt;p&gt;For inspiration you should have a look at the FileResource
+implementation. Please let me now, if you are going to implement a new
+type of resource.&lt;/p&gt;
+
+&lt;h3&gt;RackDAV on GitHub&lt;/h3&gt;
+
+&lt;p&gt;Download or fork the project on its &lt;a href=&quot;http://github.com/georgi/rack_dav&quot;&gt;Github page&lt;/a&gt;&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2009_04_22_rackdav-web-authoring-for-rack.html" type="text/html" />
+    <published>22 Apr 09 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_08_16_patroon-a-javascript-template-engine-part-2.html</id>
+    <title type="text">Patroon - a Javascript Template Engine (Part 2)</title>
+    <updated>16 Aug 08 00:00</updated>
+    <content type="html">&lt;p&gt;This post is an update to my &lt;a href=&quot;http://www.matthias-georgi.de/2008/9/patroon-a-javascript-template-engine.html&quot;&gt;initial post&lt;/a&gt;. Patroon has been
+improved and is now easier to use and uses a better algorithm
+internally.&lt;/p&gt;
+
+&lt;p&gt;Patroon is a template engine written in Javascript in about 130 lines
+of code. It takes existing DOM nodes annotated with class names and
+expand a data object according to simple rules. Additionally you may
+use traditional string interpolation inside attribute values and text
+nodes.&lt;/p&gt;
+
+&lt;h3&gt;The Data&lt;/h3&gt;
+
+&lt;p&gt;Comments in this blog are stored as a list of JSON objects, I wrote
+about it &lt;a href=&quot;http://www.matthias-georgi.de/2008/9/commenting-system-with-lightweight-json-store.html&quot;&gt;here&lt;/a&gt;. So think about a data object like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;var data = { 
+  comment: [{
+    time: &amp;quot;2008-09-07 12:28:33&amp;quot;, 
+    name: &amp;quot;David Beckham&amp;quot;,
+    website: &amp;quot;beckham.com&amp;quot;,
+    text: &amp;quot;I watched the euro finals on tv...&amp;quot; 
+  }, { 
+    time: &amp;quot;2008-09-07 14:28:33&amp;quot;, 
+    name: &amp;quot;Tuncay&amp;quot;,
+    website: &amp;quot;&amp;quot;,
+    text: &amp;quot;Me too&amp;quot;
+  }]
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The Template&lt;/h3&gt;
+
+&lt;p&gt;This data will be expanded with help of following template:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;comments&amp;quot;&amp;gt;  
+  &amp;lt;div id=&amp;quot;comments-template&amp;quot;&amp;gt;
+    &amp;lt;div class=&amp;quot;comment&amp;quot;&amp;gt;
+      &amp;lt;div class=&amp;quot;top&amp;quot;&amp;gt;
+        {website.length &amp;gt; 0 ? linkTo(name, website) : name} said
+        &amp;lt;a title=&amp;quot;{time}&amp;quot;&amp;gt;&amp;lt;/a&amp;gt;:
+      &amp;lt;/div&amp;gt;
+      &amp;lt;div class=&amp;quot;text&amp;quot;&amp;gt;
+        {text}
+      &amp;lt;/div&amp;gt;
+    &amp;lt;/div&amp;gt;   
+  &amp;lt;/div&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Usage&lt;/h3&gt;
+
+&lt;p&gt;The javascript to actually execute this template looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// The comments template will be removed from the DOM!
+var template = new Template(&amp;#39;comments-template&amp;#39;);
+
+// Expand the template into the comments section
+$(&amp;#39;.comments&amp;#39;).expand(template, data);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you don&amp;#39;t want to use jQuery, please look at the end of this article.&lt;/p&gt;
+
+&lt;h3&gt;Output&lt;/h3&gt;
+
+&lt;p&gt;The given example renders following output:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;comments&amp;quot;&amp;gt;  
+  &amp;lt;div id=&amp;quot;comments-template&amp;quot;&amp;gt;
+    &amp;lt;div class=&amp;quot;comment&amp;quot;&amp;gt;
+      &amp;lt;div class=&amp;quot;top&amp;quot;&amp;gt;
+        &amp;lt;a href=&amp;quot;http://backham.com&amp;quot;&amp;gt;David Beckham&amp;lt;/a&amp;gt; said
+        &amp;lt;a title=&amp;quot;2008-09-07 12:28:33&amp;quot;&amp;gt;2 hours ago&amp;lt;/a&amp;gt;
+      &amp;lt;/div&amp;gt;
+      &amp;lt;div class=&amp;quot;text&amp;quot;&amp;gt;
+        I watched the euro finals on tv...
+      &amp;lt;/div&amp;gt;
+    &amp;lt;/div&amp;gt;   
+    &amp;lt;div class=&amp;quot;comment&amp;quot;&amp;gt;
+      &amp;lt;div class=&amp;quot;top&amp;quot;&amp;gt;
+        Tuncay said
+        &amp;lt;a title=&amp;quot;2008-09-07 14:28:33&amp;quot;&amp;gt;1 minute ago&amp;lt;/a&amp;gt;
+      &amp;lt;/div&amp;gt;
+      &amp;lt;div class=&amp;quot;text&amp;quot;&amp;gt;
+        Me too
+      &amp;lt;/div&amp;gt;
+    &amp;lt;/div&amp;gt;   
+  &amp;lt;/div&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Basic Rules&lt;/h3&gt;
+
+&lt;p&gt;There are 3 basic rules regarding the evaluation:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Each found class name of a node will be looked up in the current
+data object. If found, the node will be processed in the new scope.
+Example: the class name &lt;code&gt;comment&lt;/code&gt; instructs to lookup the name
+&lt;code&gt;comment&lt;/code&gt; in the data object, which contains the comment array.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Arrays repeat the current node and process its elements recursively.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Code will be evaluated for text surrounded with braces (works also
+for attributes). The evaluation takes place in the scope of the
+current data object, which is in the example a comment object. So
+the snippet &lt;code&gt;&amp;lt;a title=&amp;quot;{time}&amp;quot;&amp;gt;&lt;/code&gt; will lookup the time in the comment
+object and insert into the title attribute.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Helper&lt;/h3&gt;
+
+&lt;p&gt;Code snippets inside the template will be executed within the scope of
+a Helper object. If you want to extend it, just add your functions to
+&lt;code&gt;Template.Helper&lt;/code&gt;. At the moment it defines only one function:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Template.Helper = {
+
+    linkTo: function(text, url) {
+        if (url.indexOf(&amp;#39;http://&amp;#39;) == -1 &amp;amp;&amp;amp; url[0] != &amp;#39;/&amp;#39; &amp;amp;&amp;amp; url[0] != &amp;#39;#&amp;#39;) {
+            url = &amp;#39;http://&amp;#39; + url;
+        }
+        return &amp;#39;&amp;lt;a href=&amp;quot;&amp;#39; + url +&amp;#39;&amp;quot;&amp;gt;&amp;#39; + text + &amp;#39;&amp;lt;/a&amp;gt;&amp;#39;;
+    }
+
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Examples&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://www.matthias-georgi.de/2008/9/using-javascript-templates-for-a-delicious-sidebar.html&quot;&gt;a Delicious Sidebar&lt;/a&gt;, which renders a &lt;em&gt;JSON&lt;/em&gt; feed with the help
+of Patroon.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Download&lt;/h3&gt;
+
+&lt;p&gt;Download the script at my &lt;a href=&quot;http://github.com/georgi/patroon/tree/master&quot;&gt;github repository&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Related Work&lt;/h3&gt;
+
+&lt;p&gt;There are some other libraries for javascript templating, which are
+related to &lt;strong&gt;Patroon&lt;/strong&gt;:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://beebole.com/pure/&quot;&gt;PURE&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://jsrepeater.devprog.com/&quot;&gt;jsRepeater&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://code.google.com/p/trimpath/wiki/JavaScriptTemplates&quot;&gt;TrimPath&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://embeddedjs.com/&quot;&gt;EmbeddedJS&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Patroon is probably the smallest templating solution around and
+consists only of 130 lines of code.&lt;/p&gt;
+
+&lt;h3&gt;Appendix&lt;/h3&gt;
+
+&lt;p&gt;Without jQuery template expansion is a bit verbose:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;@@javascript
+
+// The comments template will be removed from the DOM!
+var template = new Template(&amp;#39;comments-template&amp;#39;);
+
+// template will result in a new DOM node
+var result = template.expand(data);
+
+// insert the resulting node into the comments container
+var container = document.getElementsByClassName(&amp;#39;comments&amp;#39;)[0];
+container.appendChild(result);
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_08_16_patroon-a-javascript-template-engine-part-2.html" type="text/html" />
+    <published>16 Aug 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_05_12_emacs-completions.html</id>
+    <title type="text">Emacs Completions with Hippie-Expand and Snippets</title>
+    <updated>12 May 08 00:00</updated>
+    <content type="html">&lt;p&gt;One of the most important features of a text editor is the completing
+of text inside a buffer. There a lots of packages for Emacs, which
+provide this feature in many different ways. I will show you, what I
+use to improve my life as coder.&lt;/p&gt;
+
+&lt;p&gt;&lt;EMBED SRC=&quot;shockwaves/emacs-completion.swf&quot; WIDTH=400 HEIGHT=320 quality=low loop=false TYPE=&quot;application/x-shockwave-flash&quot; PLUGINSPAGE=&quot;http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash&quot;&gt;&lt;/p&gt;
+
+&lt;h3&gt;Multifunctional tab key&lt;/h3&gt;
+
+&lt;p&gt;Most of the time the tab key in Emacs is bound to the indentation
+command, which will indent the current line. So if you want to use the
+tab key for other things, you need some kind of multiplexer, which
+tries to figure out, what is the right thing to do in each situation.&lt;/p&gt;
+
+&lt;p&gt;So I copied the indent-and-complete from the &lt;a href=&quot;http://dima-exe.ru/rails-on-emacs&quot; title=&quot;Emacs Rails package&quot;&gt;emacs-rails package&lt;/a&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;(require &amp;#39;hippie-exp)
+(require &amp;#39;snippet)
+
+(defun indent-and-complete ()
+  &amp;quot;Indent line and complete&amp;quot;
+  (interactive)
+
+  (cond
+   ((and (boundp &amp;#39;snippet) snippet)
+    (snippet-next-field))
+
+   ((looking-at &amp;quot;\\\\_&amp;gt;&amp;quot;)
+    (hippie-expand nil))
+
+   ((indent-for-tab-command))))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The function &lt;code&gt;indent-and-complete&lt;/code&gt; does one of the following actions:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;if a snippet is active, it jumps to the next field&lt;/li&gt;
+&lt;li&gt;if we are at a word boundary, it tries to complete with &lt;code&gt;hippie-expand&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;otherwise it indents the current line&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;HTML mode initialization&lt;/h3&gt;
+
+&lt;p&gt;Well, this function alone will not change your editor behaviour. For
+activating our tab function, we need to bind the tab key.&lt;/p&gt;
+
+&lt;p&gt;Additionally we want to setup &lt;code&gt;hippie-expand&lt;/code&gt;, an expansion package,
+which will try to expand the word before the cursor in a configurable
+way. &lt;code&gt;hippie-expand-try-functions-list&lt;/code&gt; is a variable, which defines a
+list of functions, which should be called for completion.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;#39;s have a look at my &lt;code&gt;html-mode&lt;/code&gt; initialization function. It will configure
+the completion behaviour of hippie-expand an bind the tab key to &lt;code&gt;indent-and-complete&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;;; We need a simple wrapper for expand-abbrev
+(defun try-expand-abbrev (old)
+  (expand-abbrev))
+
+;; ********************************************************************************
+;; HTML Mode
+;;
+(add-to-list &amp;#39;auto-mode-alist &amp;#39;(&amp;quot;\\\\.html\\\\&amp;#39;&amp;quot; . html-mode))
+
+(defun html-mode-on-init ()
+  (set (make-local-variable &amp;#39;hippie-expand-try-functions-list)
+       &amp;#39;(try-expand-abbrev
+         try-expand-dabbrev))
+  (define-key html-mode-map (kbd &amp;quot;&amp;lt;tab&amp;gt;&amp;quot;) &amp;#39;indent-and-complete))
+
+(add-hook &amp;#39;html-mode-hook &amp;#39;html-mode-on-init)    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;There a two functions, which will be asked to complete the current word:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;try-expand-abbrev&lt;/code&gt;: Expands the current word by looking into the
+list of defined abbreviations. So called abbrevs are just shortcuts
+in Emacs. So if you type &lt;code&gt;li&lt;/code&gt; and hit the tab key it will be
+expanded to &lt;code&gt;&amp;lt;li&amp;gt;&amp;lt;/li&amp;gt;&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;try-expand-dabbrev&lt;/code&gt;: Dynamic abbreviation is a pragmatic method for
+completing words. Emacs will look for words with the same beginning
+and use them for completion. Hitting multiple times the tab key will
+give you different completions, as you may know from the unix shell.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Defining your snippets&lt;/h3&gt;
+
+&lt;p&gt;Now if you want to use snippets for your &lt;code&gt;html-mode&lt;/code&gt;, you have to
+define a abbrev-table with your desired snippets. &lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;(define-abbrev-table &amp;#39;html-mode-abbrev-table ())
+
+(snippet-with-abbrev-table &amp;#39;html-mode-abbrev-table 
+ (&amp;quot;h1&amp;quot;      . &amp;quot;&amp;lt;h1&amp;gt;$.&amp;lt;/h1&amp;gt;&amp;quot;)
+ (&amp;quot;h2&amp;quot;      . &amp;quot;&amp;lt;h2&amp;gt;$.&amp;lt;/h2&amp;gt;&amp;quot;)
+ (&amp;quot;h3&amp;quot;      . &amp;quot;&amp;lt;h3&amp;gt;$.&amp;lt;/h3&amp;gt;&amp;quot;)
+ (&amp;quot;h4&amp;quot;      . &amp;quot;&amp;lt;h3&amp;gt;$.&amp;lt;/h4&amp;gt;&amp;quot;)
+ (&amp;quot;h5&amp;quot;      . &amp;quot;&amp;lt;h3&amp;gt;$.&amp;lt;/h5&amp;gt;&amp;quot;)
+ (&amp;quot;h6&amp;quot;      . &amp;quot;&amp;lt;h6&amp;gt;$.&amp;lt;/h6&amp;gt;&amp;quot;)
+ (&amp;quot;div&amp;quot;     . &amp;quot;&amp;lt;div&amp;gt;$.&amp;lt;/div&amp;gt;&amp;quot;)
+ (&amp;quot;divc&amp;quot;    . &amp;quot;&amp;lt;div class=\&amp;quot;$${class}\&amp;quot;&amp;gt;$.&amp;lt;/div&amp;gt;&amp;quot;)
+ (&amp;quot;span&amp;quot;    . &amp;quot;&amp;lt;span&amp;gt;$.&amp;lt;/span&amp;gt;&amp;quot;)
+ (&amp;quot;spans&amp;quot;   . &amp;quot;&amp;lt;span style=\&amp;quot;$${style}\&amp;quot;&amp;gt;$.&amp;lt;/span&amp;gt;&amp;quot;)
+ (&amp;quot;form&amp;quot;    . &amp;quot;&amp;lt;form action=\&amp;quot;$${action}\&amp;quot; method=\&amp;quot;$${post}\&amp;quot;&amp;gt;$.&amp;lt;/form&amp;gt;&amp;quot;)
+ (&amp;quot;input&amp;quot;   . &amp;quot;&amp;lt;input type=\&amp;quot;$${text}\&amp;quot; name=\&amp;quot;$${name}\&amp;quot; value=\&amp;quot;$${value}\&amp;quot;/&amp;gt;&amp;quot;)
+ (&amp;quot;a&amp;quot;       . &amp;quot;&amp;lt;a href=\&amp;quot;$${href}\&amp;quot;&amp;gt;$.&amp;lt;/a&amp;gt;&amp;quot;)
+ (&amp;quot;br&amp;quot;      . &amp;quot;&amp;lt;br/&amp;gt;$.&amp;quot;)
+ (&amp;quot;ul&amp;quot;      . &amp;quot;&amp;lt;ul&amp;gt;$.&amp;lt;/ul&amp;gt;&amp;quot;)
+ (&amp;quot;ol&amp;quot;      . &amp;quot;&amp;lt;ul&amp;gt;$.&amp;lt;/ul&amp;gt;&amp;quot;)
+ (&amp;quot;li&amp;quot;      . &amp;quot;&amp;lt;li&amp;gt;$.&amp;lt;/li&amp;gt;&amp;quot;)
+ (&amp;quot;tab&amp;quot;     . &amp;quot;&amp;lt;table&amp;gt;$.&amp;lt;/table&amp;gt;&amp;quot;)
+ (&amp;quot;tr&amp;quot;      . &amp;quot;&amp;lt;tr&amp;gt;$.&amp;lt;/tr&amp;gt;&amp;quot;)
+ (&amp;quot;td&amp;quot;      . &amp;quot;&amp;lt;td&amp;gt;$.&amp;lt;/td&amp;gt;&amp;quot;)
+ (&amp;quot;th&amp;quot;      . &amp;quot;&amp;lt;th&amp;gt;$.&amp;lt;/th&amp;gt;&amp;quot;)
+ (&amp;quot;str&amp;quot;     . &amp;quot;&amp;lt;strong&amp;gt;$.&amp;lt;/strong&amp;gt;&amp;quot;)
+ (&amp;quot;em&amp;quot;      . &amp;quot;&amp;lt;em&amp;gt;$.&amp;lt;/em&amp;gt;&amp;quot;)
+ (&amp;quot;meta&amp;quot;    . &amp;quot;&amp;lt;meta name=\&amp;quot;$${name}\&amp;quot; content=\&amp;quot;$${content}\&amp;quot;/&amp;gt;&amp;quot;)
+ (&amp;quot;style&amp;quot;   . &amp;quot;&amp;lt;style type=\&amp;quot;text/css\&amp;quot;&amp;gt;$.&amp;lt;/style&amp;gt;&amp;quot;)
+ (&amp;quot;script&amp;quot;  . &amp;quot;&amp;lt;script type=\&amp;quot;text/javascript\&amp;quot;&amp;gt;$.&amp;lt;/script&amp;gt;&amp;quot;)
+ (&amp;quot;scripts&amp;quot; . &amp;quot;&amp;lt;script src=\&amp;quot;$${src}\&amp;quot; type=\&amp;quot;text/javascript\&amp;quot;&amp;gt;$.&amp;lt;/script&amp;gt;&amp;quot;)
+ (&amp;quot;img&amp;quot;     . &amp;quot;&amp;lt;img src=\&amp;quot;$.\&amp;quot;/&amp;gt;&amp;quot;)
+ (&amp;quot;link&amp;quot;    . &amp;quot;&amp;lt;link href=\&amp;quot;$${href}\&amp;quot; media=\&amp;quot;screen\&amp;quot; rel=\&amp;quot;stylesheet\&amp;quot; type=\&amp;quot;text/css\&amp;quot;/&amp;gt;&amp;quot;))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Great. If you put all the code in your .emacs file, you should be able
+to use your tab key for completions. In our case we defined snippets
+for the &lt;code&gt;html-mode&lt;/code&gt; and activated &lt;code&gt;hippie-expand&lt;/code&gt; to use abbrevs and
+dynamic abbreviation. There is much more stuff I will show you next
+time, like customizations for other language modes like &lt;em&gt;Ruby&lt;/em&gt; and
+&lt;em&gt;Javascript&lt;/em&gt;.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_05_12_emacs-completions.html" type="text/html" />
+    <published>12 May 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2013_01_12_how-to-write-a-blog-engine-in-haskell-part-1.html</id>
+    <title type="text">How to write a blog engine in Haskell Part 1</title>
+    <updated>12 Jan 13 00:00</updated>
+    <content type="html">&lt;p&gt;I really like to evaluate programming languages based on their
+practical value and one of the fun tasks is to write a small static
+file blog engine. The engine just converts a bunch of markdown files
+which are sorted into folders by month and year to html files given a
+set of simple templates.&lt;/p&gt;
+
+&lt;h2&gt;Top level structure&lt;/h2&gt;
+
+&lt;p&gt;Basically the rendering of blog posts can be done in three steps:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Find all files that contain blog posts&lt;/li&gt;
+&lt;li&gt;Read the markdown files into records&lt;/li&gt;
+&lt;li&gt;Render each file to html and write to disk&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In Haskell these steps could be written as:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;writeBlog :: IO ()
+writeBlog = do
+  files &amp;lt;- findFiles &amp;quot;posts&amp;quot;
+  posts &amp;lt;- mapM readPost files
+  mapM_ writePost posts
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;When working inside the IO monad, you will use &lt;code&gt;mapM&lt;/code&gt; and &lt;code&gt;mapM_&lt;/code&gt;
+quite often, similar to &lt;code&gt;map&lt;/code&gt; they have following type signatures:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;mapM :: Monad m =&amp;gt; (a -&amp;gt; m b) -&amp;gt; [a] -&amp;gt; m [b]
+mapM_ :: Monad m =&amp;gt; (a -&amp;gt; m b) -&amp;gt; [a] -&amp;gt; m ()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;They apply a monadic operation &lt;code&gt;a -&amp;gt; m b&lt;/code&gt; to each element of a list
+and either you want to keep the result of each operation (mapM) or not
+(mapM_).&lt;/p&gt;
+
+&lt;p&gt;Interestingly there is a more generalized version in &lt;code&gt;Data.Traversable&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;(Monad m, Traversable t) =&amp;gt; (a -&amp;gt; m b) -&amp;gt; t a -&amp;gt; m (t b)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This function applies the monadic operation to anything that is
+traversable. So you could build a tree data type and declare it as
+instance of &lt;code&gt;Data.Traversable&lt;/code&gt; and use this function to apply the
+operation while maintaining the tree structure. For example a tree
+of files would be converted into a tree of blog posts.&lt;/p&gt;
+
+&lt;h2&gt;Find files&lt;/h2&gt;
+
+&lt;p&gt;So the first step in the blog rendering process would be to find all
+files containing a post. So I created a folder named &lt;code&gt;posts&lt;/code&gt; which
+contains folders for each year, which in turn contain folders for each
+month, which finally contain all the blog posts.&lt;/p&gt;
+
+&lt;p&gt;What we want now is the same as the UNIX command &lt;code&gt;find posts -type f&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;This can be done by looking at the entries of a folder and entering
+each sub folder to examine its contents. When we find a file, we
+collect it into a result list, which will contain all files
+eventually.&lt;/p&gt;
+
+&lt;p&gt;When dealing with tree structures like a file system, recursion is an
+elegant alternative to iteration. For each folder we find, the function
+should call itself recursively until it ends up at the bottom most
+level containing the files.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;findFiles :: FilePath -&amp;gt; IO [FilePath]
+findFiles path = do
+  isFile &amp;lt;- doesFileExist path
+  if isFile then
+      return [path]
+    else do
+      entries &amp;lt;- getEntries path
+      paths &amp;lt;- return $ map (\ entry -&amp;gt; path ++ &amp;quot;/&amp;quot; ++ entry) entries
+      files &amp;lt;- mapM findFiles paths
+      return $ concat files
+  where
+    getEntries filepath = do
+      contents &amp;lt;- getDirectoryContents filepath
+      return $ filter ((/= &amp;#39;.&amp;#39;) . head) contents
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;findFiles&lt;/code&gt; takes a &lt;code&gt;FilePath&lt;/code&gt; and returns all files found in this
+folder or its subfolders. When you pass a file it will just return a
+list with this one file.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;getEntries&lt;/code&gt; is a small helper function which returns all entries of
+a folder without &amp;#39;.&amp;#39; and &amp;#39;..&amp;#39;.&lt;/p&gt;
+
+&lt;p&gt;The else branch works like this: it reads all entries of the folder,
+prepends the current path, recurses for each entry, collects the
+return values and flattens them into one big list.&lt;/p&gt;
+
+&lt;h2&gt;Reading posts into records&lt;/h2&gt;
+
+&lt;p&gt;The data type representing a post is super simple. It just contains
+the &lt;code&gt;folder&lt;/code&gt; (e.g. &amp;ldquo;posts/2012/12&amp;rdquo;), the &lt;code&gt;file&lt;/code&gt; (e.g. &lt;code&gt;post-title.md&lt;/code&gt;)
+and the &lt;code&gt;text&lt;/code&gt; of the post.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;data Post = Post { folder, file, text :: String };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;readPost&lt;/code&gt; therefore takes a &lt;code&gt;FilePath&lt;/code&gt; and reads the file contents,
+decomposing the path name into &lt;code&gt;year&lt;/code&gt;, &lt;code&gt;month&lt;/code&gt; and &lt;code&gt;filename&lt;/code&gt;, which we
+feed into the record constructor.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;readPost :: FilePath -&amp;gt; IO Post
+readPost path = do
+  s &amp;lt;- readFile path
+  let [_, year, month, filename] = splitOn &amp;quot;/&amp;quot; path in
+    return Post { folder = year ++ &amp;quot;/&amp;quot; ++ month, file = filename, text = s }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;splitOn&lt;/code&gt; is taken from the &lt;code&gt;Data.List.Split&lt;/code&gt; module in the &lt;code&gt;split&lt;/code&gt; package
+and splits a string into a list of strings given a delimiter string.&lt;/p&gt;
+
+&lt;h2&gt;To be continued&lt;/h2&gt;
+
+&lt;p&gt;Next part in this series will take a look at the actual rendering of blog
+post using the &lt;code&gt;sundown&lt;/code&gt; package.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2013_01_12_how-to-write-a-blog-engine-in-haskell-part-1.html" type="text/html" />
+    <published>12 Jan 13 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2009_01_12_git-store-using-git-as-versioned-data-store-in-ruby.html</id>
+    <title type="text">Git Store - using Git as versioned data store in Ruby</title>
+    <updated>12 Jan 09 00:00</updated>
+    <content type="html">&lt;p&gt;GitStore is a small Ruby library, providing an easy interface to the
+version control system &lt;a href=&quot;http://git.or.cz/&quot;&gt;Git&lt;/a&gt;. It aims to use Git as a versioned
+data store much like the well known PStore. Basically GitStore checks
+out the repository into a in-memory representation, which can be
+modified and finally committed. In this way your data is stored in a
+folder structure and can be checked out and examined, but the
+application may access the data in a convenient hash-like way. This
+library is based on &lt;a href=&quot;http://github.com/mojombo/grit&quot;&gt;Grit&lt;/a&gt;, the main technology behind &lt;a href=&quot;http://github.com/&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;
+GitStore has its own &lt;a href=&quot;/gitstore&quot;&gt;project page&lt;/a&gt; now!
+Please look for current information there.
+&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Installation&lt;/h3&gt;
+
+&lt;p&gt;GitStore can be installed as gem easily, if you have RubyGems 1.2.0:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gem sources -a http://gems.github.com (you only have to do this once)
+$ sudo gem install mojombo-grit georgi-git_store
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you don&amp;#39;t have RubyGems 1.2.0, you may download the package on the
+&lt;a href=&quot;http://www.newartisans.com/blog_files/git.versioned.data.store.php&quot;&gt;github page&lt;/a&gt; and build the gem yourself:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gem build git_store.gemspec
+$ sudo gem install git_store
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Usage Example&lt;/h3&gt;
+
+&lt;p&gt;First thing you should do, is to initialize a new git repository.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ mkdir test
+$ cd test
+$ git init
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now you can instantiate a GitStore instance and store some data. The
+data will be serialized depending on the file extension. So for YAML
+storage you can use the &amp;#39;yml&amp;#39; extension:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;class WikiPage &amp;lt; Struct.new(:author, :title, :body); end
+class User &amp;lt; Struct.new(:name); end
+
+store = GitStore.new(&amp;#39;.&amp;#39;)
+
+store[&amp;#39;users/matthias.yml&amp;#39;] = User.new(&amp;#39;Matthias&amp;#39;)
+store[&amp;#39;pages/home.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Home&amp;#39;, &amp;#39;This is the home page...&amp;#39;)
+
+store.commit &amp;#39;Added user and page&amp;#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Note that directories will be created automatically.&lt;/p&gt;
+
+&lt;p&gt;Another way to access a path is:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;store[&amp;#39;config&amp;#39;, &amp;#39;wiki.yml&amp;#39;] = { &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;My Personal Wiki&amp;#39; }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finally you can access the git store as a Hash of Hashes, but in this
+case you have to create the Tree objects manually:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;store[&amp;#39;users&amp;#39;] = GitStore::Tree.new
+store[&amp;#39;users&amp;#39;][&amp;#39;matthias.yml&amp;#39;] = User.new(&amp;#39;Matthias&amp;#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Where is my data?&lt;/h3&gt;
+
+&lt;p&gt;When you call the &lt;code&gt;commit&lt;/code&gt; method, your data is written back straight
+into the git repository. No intermediate file representation. So if
+you want to look into your data, you can use some git browser like
+&lt;a href=&quot;http://www.kernel.org/pub/software/scm/git/docs/git-gui.html&quot;&gt;git-gui&lt;/a&gt; or just checkout the files:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ git checkout
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Iteration&lt;/h3&gt;
+
+&lt;p&gt;Iterating over the data objects is quite easy. Furthermore you can
+iterate over trees and subtrees, so you can partition your data in a
+meaningful way. For example you may separate the config files and the
+pages of a wiki:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;store[&amp;#39;pages/home.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Home&amp;#39;, &amp;#39;This is the home page...&amp;#39;)
+store[&amp;#39;pages/about.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;About&amp;#39;, &amp;#39;About this site...&amp;#39;)
+store[&amp;#39;pages/links.yml&amp;#39;] = WikiPage.new(&amp;#39;matthias&amp;#39;, &amp;#39;Links&amp;#39;, &amp;#39;Some useful links...&amp;#39;)
+store[&amp;#39;config/wiki.yml&amp;#39;] = { &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;My Personal Wiki&amp;#39; }
+
+store.each { |obj| ... } # yields all pages and the config hash
+store[&amp;#39;pages&amp;#39;].each { |page| ... } # yields only the pages
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Serialization&lt;/h3&gt;
+
+&lt;p&gt;Serialization is dependent on the filename extension. You can add more
+handlers if you like, the interface is like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;class YAMLHandler
+  def read(id, name, data)
+    YAML.load(data)
+  end
+
+  def write(data)
+    data.to_yaml
+  end    
+end
+
+GitStore::Handler[&amp;#39;yml&amp;#39;] = YAMLHandler.new
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Shinmun uses its own handler for files with &lt;code&gt;md&lt;/code&gt; extension:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;class PostHandler
+  def read(name, data)
+    Post.new(:filename =&amp;gt; name, :src =&amp;gt; data)
+  end
+
+  def write(post)
+    post.dump
+  end    
+end
+
+GitStore::Handler[&amp;#39;md&amp;#39;] = PostHandler.new
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Related Work&lt;/h3&gt;
+
+&lt;p&gt;John Wiegley already has done &lt;a href=&quot;http://www.newartisans.com/blog_files/git.versioned.data.store.php&quot;&gt;something similar for Python&lt;/a&gt;. His
+implementation has its own git interface, GitStore uses the wonderful
+&lt;a href=&quot;http://github.com/mojombo/grit&quot;&gt;Grit&lt;/a&gt; library.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2009_01_12_git-store-using-git-as-versioned-data-store-in-ruby.html" type="text/html" />
+    <published>12 Jan 09 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2011_06_11_emacs-dark-theme.html</id>
+    <title type="text">Emacs Dark Theme</title>
+    <updated>11 Jun 11 00:00</updated>
+    <content type="html">&lt;p&gt;Recently I updated my Emacs setup and decided to go for a more minimal
+color theme. Especially on long coding nights you want a theme without
+distracting colors.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://www.matthias-georgi.de/images/emacs-dark-theme.png&quot; alt=&quot;Emacs dark theme&quot;&gt;&lt;/p&gt;
+
+&lt;h3&gt;Configuration&lt;/h3&gt;
+
+&lt;p&gt;Just paste this code into your emacs condiguration:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt; (set-face-attribute &amp;#39;default nil
+                     :background &amp;quot;grey20&amp;quot;
+                     :foreground &amp;quot;grey90&amp;quot;)
+
+ (set-face-attribute &amp;#39;modeline nil
+                     :background &amp;quot;grey10&amp;quot;
+                     :foreground &amp;quot;grey90&amp;quot;)
+
+ (set-face-attribute &amp;#39;cursor nil
+                     :background &amp;quot;white&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-builtin-face nil
+                     :foreground &amp;quot;grey60&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-comment-face nil
+                     :foreground &amp;quot;grey60&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-constant-face nil
+                     :foreground &amp;quot;grey60&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-keyword-face nil
+                     :foreground &amp;quot;white&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-string-face nil
+                     :foreground &amp;quot;white&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-variable-name-face nil
+                     :foreground &amp;quot;lightblue&amp;quot;)
+
+ (set-face-attribute &amp;#39;font-lock-function-name-face nil
+                     :foreground &amp;quot;lightblue&amp;quot;)
+
+ (set-face-attribute &amp;#39;region nil
+                     :background &amp;quot;#111&amp;quot;)                    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Additional faces&lt;/h3&gt;
+
+&lt;p&gt;If you use speedbar or elscreen, you can set additional faces:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;(set-face-attribute &amp;#39;speedbar-file-face nil
+                    :foreground &amp;quot;white&amp;quot;)
+
+(set-face-attribute &amp;#39;elscreen-tab-background-face nil
+                    :background &amp;quot;grey10&amp;quot;
+                    :foreground &amp;quot;grey90&amp;quot;)
+
+(set-face-attribute &amp;#39;elscreen-tab-control-face nil
+                    :background &amp;quot;grey20&amp;quot;
+                    :foreground &amp;quot;grey90&amp;quot;)
+
+(set-face-attribute &amp;#39;elscreen-tab-current-screen-face nil
+                    :background &amp;quot;grey20&amp;quot;
+                    :foreground &amp;quot;grey90&amp;quot;)
+
+(set-face-attribute &amp;#39;elscreen-tab-other-screen-face nil
+                    :background &amp;quot;grey30&amp;quot;
+                    :foreground &amp;quot;grey60&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2011_06_11_emacs-dark-theme.html" type="text/html" />
+    <published>11 Jun 11 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_12_06_shinmun-a-small-and-beautiful-blog-engine.html</id>
+    <title type="text">Shinmun, a small and beautiful blog engine</title>
+    <updated>06 Dec 08 00:00</updated>
+    <content type="html">&lt;p&gt;Shinmun is a minimalist blog engine. You just write posts as text files,
+render them to static files and push your blog to your server.&lt;/p&gt;
+
+&lt;p&gt;This allows you to write posts in your favorite editor like Emacs or
+VI and use a VCS like git.&lt;/p&gt;
+
+&lt;p&gt;Your layout can be customized by a set of &lt;em&gt;ERB templates&lt;/em&gt;. These
+templates have access to &lt;code&gt;Post&lt;/code&gt; objects and &lt;em&gt;helper methods&lt;/em&gt; so that
+anybody who knows &lt;em&gt;Rails&lt;/em&gt; should feel comfortable with it.&lt;/p&gt;
+
+&lt;h3&gt;Shinmun Features&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Index listing&lt;/li&gt;
+&lt;li&gt;Category listing&lt;/li&gt;
+&lt;li&gt;Archive listings for each month&lt;/li&gt;
+&lt;li&gt;RSS feeds for index and category pages&lt;/li&gt;
+&lt;li&gt;Builtin webserver for realtime rendering&lt;/li&gt;
+&lt;li&gt;Compression of javascript files with PackR&lt;/li&gt;
+&lt;li&gt;Included syntax highlighting through &lt;code&gt;highlight.js&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;AJAX comment system with PHP JSON file storage&lt;/li&gt;
+&lt;li&gt;Integration of WMD-Markdown Editor for commenting&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Quickstart&lt;/h3&gt;
+
+&lt;p&gt;Install the gem:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;gem install shinmun
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Download and extract the example blog from my &lt;a href=&quot;http://github.com/georgi/shinmun-example/tree/master&quot;&gt;github repository&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Issue the following commands and you will see the blog on
+&lt;code&gt;http://localhost:3000&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;cd shinmun-example
+shinmun server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Writing Posts&lt;/h3&gt;
+
+&lt;p&gt;Posts can be created by using the &lt;code&gt;shinmun&lt;/code&gt; command inside your blog folder:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;shinmun new &amp;#39;The title of the post&amp;#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Shinmun will then create a post file in the right place, for example
+in &lt;code&gt;posts/2008/9/the-title-of-the-post.md&lt;/code&gt;. After creating you will
+probably open the file, set the category and start writing your new
+article.&lt;/p&gt;
+
+&lt;p&gt;Now you want to look at your rendered post. Just run:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;shinmun server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Go to &lt;code&gt;http://localhost:3000&lt;/code&gt; and you will see your blog served in
+realtime. Just change and save any of your posts and you will see the
+new output in your browser.&lt;/p&gt;
+
+&lt;p&gt;After finishing your post, you may run &lt;code&gt;shinmun render&lt;/code&gt; and the output
+will be rendered to the &lt;em&gt;public&lt;/em&gt; folder.&lt;/p&gt;
+
+&lt;p&gt;By issuing the &lt;code&gt;shinmun push&lt;/code&gt; command your blog will be pushed to your
+server using rsync. This works only, if you define the blog_repository
+variable inside blog.yml. It should contain something like
+&lt;code&gt;user@myhost.com:/var/www/my-site/&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Post Format&lt;/h3&gt;
+
+&lt;p&gt;Each blog post is just a text file with an optional header section and
+a markup body, which are separated by a newline. Normally you don&amp;#39;t
+have to worry about the post format, if you create posts with the
+&lt;code&gt;shinmun new&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;The &lt;strong&gt;first line&lt;/strong&gt; of the header should start with 3 dashes as usual
+for a YAML document.&lt;/p&gt;
+
+&lt;p&gt;The title of your post will be parsed from your first heading
+according to the document type. Shinmun will try to figure out the
+title for Markdown, Textile and HTML files.&lt;/p&gt;
+
+&lt;p&gt;The yaml header may have following attributes:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;date&lt;/code&gt;: post will show up in blog page and archive pages&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;category&lt;/code&gt;: post will show up in the defined category page&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;guid&lt;/code&gt;: will be set automatically by Shinmun&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Posts without a date are by definition static pages.&lt;/p&gt;
+
+&lt;p&gt;Example post:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;--- 
+category: Ruby
+date: 2008-09-05
+guid: 7ad04f10-5dd6-012b-b53c-001a92975b89
+
+BlueCloth, a Markdown library
+=============================
+
+This is the summary, which is by definition the first paragraph of the
+article. The summary shows up in category listings or the index listing.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The guid should never change, as it will be you used for identifying
+posts for comments.&lt;/p&gt;
+
+&lt;h3&gt;Directory layout&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Your &lt;strong&gt;assets&lt;/strong&gt; are in the &lt;code&gt;assets&lt;/code&gt; folder, which gets copied to the
+public folder in the render step.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;The &lt;strong&gt;settings of your blog&lt;/strong&gt; are defined in &lt;code&gt;config/blog.yml&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Your &lt;strong&gt;posts&lt;/strong&gt; reside in the &lt;code&gt;posts&lt;/code&gt; folder sorted by year/month.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Your &lt;strong&gt;pages&lt;/strong&gt; are located in the &lt;code&gt;pages&lt;/code&gt; folder.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Template&lt;/strong&gt; files are in the &lt;code&gt;templates&lt;/code&gt; folder.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;The &lt;strong&gt;index page&lt;/strong&gt; of your blog is defined in &lt;code&gt;pages/index.rhtml&lt;/code&gt; and
+may be customized.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Archive pages&lt;/strong&gt; will be rendered to files like &lt;code&gt;public/2008/9/index.html&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Category pages&lt;/strong&gt; will be rendered to files like &lt;code&gt;public/categories/ruby.html&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;An example tree:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;+ assets
+  + images
+  + stylesheets
+  + javascripts      
++ config
+  + blog.yml
++ pages
+  + about.md
+  + index.rhtml
++ posts
+  + 2007
+  + 2008
+    + 9
+      + my-article.md
++ templates
+  + feed.rxml
+  + layout.rhtml
+  + page.rhtml  
+  + post.rhtml  
+  + posts.rhtml
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The output will look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;+ public
+  + index.html
+  + about.html
+  + categories
+    + emacs.html
+    + ruby.html
+  + 2007   
+  + 2008
+    + 9
+      + my-article.html
+  + images
+  + stylesheets
+  + javascripts
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Config file&lt;/h3&gt;
+
+&lt;p&gt;The configuration of the blog system consists of some variables
+encoded as yaml file:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;blog_title: the title of your blog, used for rss&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;blog_description: used for rss&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;blog_language: used for rss&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;blog_author: used for rss, acts also as fallback for the blog.author variable&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;blog_url: used for rss&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;blog_repository: path for rsync, used for &lt;code&gt;shinmun push&lt;/code&gt; command&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;base_path: if your blog should not be rendered to your site
+root, you can define a sub path here (like &lt;code&gt;blog&lt;/code&gt;)&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;images_path: used for templates helper, defaults to &lt;code&gt;images&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;javascripts_path: used for templates helper, defaults to &lt;code&gt;javascripts&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;stylesheets_path: used for templates helper, defaults to &lt;code&gt;stylesheets&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;pack_javascripts: a list of scripts to be compressed&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;pack_stylesheets: a list of stylesheets to be concatenated&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Layout&lt;/h3&gt;
+
+&lt;p&gt;Layout and templates are rendered by &lt;em&gt;ERB&lt;/em&gt;.  The layout is defined in
+&lt;code&gt;layout.rhtml&lt;/code&gt;. The content will be provided in the variable
+&lt;code&gt;@content&lt;/code&gt;. A minimal example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;html&amp;gt;
+  &amp;lt;head&amp;gt;
+    &amp;lt;title&amp;gt;&amp;lt;%= @blog_title %&amp;gt;&amp;lt;/title&amp;gt;
+    &amp;lt;%= stylesheet_link_tag &amp;#39;style&amp;#39; %&amp;gt;
+  &amp;lt;/head&amp;gt;
+  &amp;lt;body&amp;gt;
+     &amp;lt;%= @content %&amp;gt;
+  &amp;lt;/body&amp;gt;
+ &amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Helpers&lt;/h3&gt;
+
+&lt;p&gt;There are also helper methods, which work the same way like the &lt;em&gt;Rails&lt;/em&gt;
+helpers. The most important ones are these:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;stylesheet_link_tag(*names)&lt;/code&gt; links a stylesheet with a timestamp&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;javascript_tag(*names)&lt;/code&gt; includes a javascript with a timestamp&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;image_tag(src, options = {})&lt;/code&gt; renders an image tag&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;link_to(text, path, options = {})&lt;/code&gt; renders a link&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Stylesheets, javascripts and images should be included by using theses
+helpers. The helper methods will include a timestamp of the
+modification time as &lt;code&gt;querystring&lt;/code&gt;, so that the browser will fetch the
+new resource if it has been changed.&lt;/p&gt;
+
+&lt;p&gt;If you want to define your own helpers, just define a file named
+&lt;code&gt;templates/helpers.rb&lt;/code&gt; with a module named &lt;code&gt;Shinmun::Helpers&lt;/code&gt;. This
+module will be included into the &lt;code&gt;Shinmun::Template&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;h3&gt;Post Template&lt;/h3&gt;
+
+&lt;p&gt;The attributes of a post are accessible as instance variables in a template:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;article&amp;quot;&amp;gt;    
+
+  &amp;lt;div class=&amp;quot;date&amp;quot;&amp;gt;
+    &amp;lt;%= date @date %&amp;gt;
+  &amp;lt;/div&amp;gt;
+
+  &amp;lt;h2&amp;gt;&amp;lt;%= @title %&amp;gt;&amp;lt;/h2&amp;gt;  
+
+  &amp;lt;%= @body %&amp;gt;
+
+  &amp;lt;h3&amp;gt;Comments&amp;lt;/h3&amp;gt;
+
+  &amp;lt;!-- Here you may put my commenting system --&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;RSS Feeds&lt;/h3&gt;
+
+&lt;p&gt;Feeds will be rendered by the &lt;em&gt;ERB template&lt;/em&gt;
+&lt;code&gt;templates/feed.rxml&lt;/code&gt;. Some of the variables have been read from the
+&lt;code&gt;blog.yml&lt;/code&gt;, like &lt;code&gt;@blog_title&lt;/code&gt;, other variables have been determined
+by the engine like &lt;code&gt;@posts&lt;/code&gt; or &lt;code&gt;@category&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Packr Support&lt;/h3&gt;
+
+&lt;p&gt;If you set the variables &lt;code&gt;pack_javascripts&lt;/code&gt; or &lt;code&gt;pack_stylesheets&lt;/code&gt;,
+Shinmun will create the files &lt;code&gt;all.js&lt;/code&gt; or &lt;code&gt;all.css&lt;/code&gt; automatically
+on rendering (even on each request of the webserver).&lt;/p&gt;
+
+&lt;p&gt;The Javascript will be compressed with Packr and for performance
+reasons, minified versions for each of your javascripts will be
+created automatically in &lt;code&gt;assets/javascripts&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;The stylesheets will be just concatenated to one file named &lt;code&gt;all.css&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Note that you define a yaml array of filenames without file
+extensions, so it should like &lt;code&gt;[jquery, jquery-form]&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Commenting System&lt;/h3&gt;
+
+&lt;p&gt;As I am not willing to build up a whole Rails stack for a single blog,
+I was looking for a simple storage for comments. I really like the
+JSON format. It works seamlessly with Javascript libraries and can be
+serialized and deserialized from almost any language.&lt;/p&gt;
+
+&lt;p&gt;Read about my &lt;a href=&quot;http://www.matthias-georgi.de/commenting-system-with-lightweight-json-store.html&quot;&gt;lightweight commenting system&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Download&lt;/h3&gt;
+
+&lt;p&gt;Simply install the gem:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;gem install shinmun
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Download or fork the package at my &lt;a href=&quot;http://github.com/georgi/shinmun/tree/master&quot;&gt;github repository&lt;/a&gt;&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_12_06_shinmun-a-small-and-beautiful-blog-engine.html" type="text/html" />
+    <published>06 Dec 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_11_03_relax-ng-schema-for-adobe-flex-3.html</id>
+    <title type="text">Relax NG Schema for Adobe Flex 3</title>
+    <updated>03 Nov 08 00:00</updated>
+    <content type="html">&lt;p&gt;In the past Flex development on Emacs was not as it should be because
+of a missing Relax NG Schema, which is needed for nxml-mode to work
+properly. To improve the situation I developed a MXML Schema generator
+based on the &lt;a href=&quot;http://code.google.com/p/xsd4mxml/&quot;&gt;XSD generator&lt;/a&gt; of &lt;a href=&quot;http://flexiglas.blogspot.com/&quot;&gt;Ali Mansuroglu&lt;/a&gt;. Now Emacs
+knows your Schema and can help you typing and validating MXML files.&lt;/p&gt;
+
+&lt;h3&gt;Emacs NXML completion&lt;/h3&gt;
+
+&lt;p&gt;Editing MXML files is now a breeze with the superb completion features
+of nxml-mode on Emacs:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;completion of tag names&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;completion of attribute keys&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;completion of attribute values (e.g. enumerations)&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;How does it work?&lt;/h3&gt;
+
+&lt;p&gt;The schema generator reads a manifest file with all classes to be
+exported.  Now for each class the generator asks the runtime to
+provide the needed information about attributes, events and
+styles (the flash runtime has a nice function called &lt;code&gt;describeType&lt;/code&gt;,
+which returns a XML representation of a type).&lt;/p&gt;
+
+&lt;p&gt;The tricky part is to convince the &lt;em&gt;MXML&lt;/em&gt; compiler to include all
+classes and metadata into the &lt;em&gt;SWF&lt;/em&gt; file. Thanks to Ali, I needn&amp;#39;t to
+figure this out, as he provides an Ant file which already has the
+needed compiler flags.&lt;/p&gt;
+
+&lt;h3&gt;How does the schema look like?&lt;/h3&gt;
+
+&lt;p&gt;The schema just lists all class names as elements and lists their
+properties, events and styles as attributes. Furthermore as much type
+information is preserved as possible using xsd types. So for example
+the &lt;code&gt;dropdownWith&lt;/code&gt; of a &lt;code&gt;ComboBox&lt;/code&gt; must be a float. XML Editors like
+nxml-mode in Emacs can validate this as yout type.&lt;/p&gt;
+
+&lt;p&gt;This is just a snippet from the schema file:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;grammar {
+  ComboBox = element ComboBox {
+    attribute implements { text }?,
+    attribute labelFunction { text }?,
+    attribute labelField { xsd:string }?,
+    attribute dropdownWidth { xsd:float }?
+    ....
+  }      
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;I&amp;#39;m using named patterns here, because I need a pattern which matches
+a choice of all possible components:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;any = Accordion
+| AddChild
+| AddChildAction
+| AddItemAction
+| AnimateProperty ....
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Why do I need this pattern? Well, all container components may have
+child components and to enable this in the schema, the conteiner
+elements have this pattern inside:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Application = element Application {
+  any?,
+  ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Problems&lt;/h3&gt;
+
+&lt;p&gt;There are some known issues, which are not resolved yet. For example
+the &lt;code&gt;Script&lt;/code&gt; tag may have a &lt;code&gt;CDATA&lt;/code&gt; element inside. Another ugly issue
+is the color syntax. Inside the Flex framework a color is just an
+integer, but we want to specify colors as hex values. Unfortunately
+xsd:integer does not allow hex values, so I have to find a solution
+for this some day.&lt;/p&gt;
+
+&lt;h3&gt;Download&lt;/h3&gt;
+
+&lt;p&gt;Download the &lt;a href=&quot;http://www.matthias-georgi.de/assets/download/flex3.rnc&quot;&gt;Relax NG Compact Schema for Adoble Flex 3&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Github&lt;/h3&gt;
+
+&lt;p&gt;Watch or fork the &lt;a href=&quot;http://github.com/georgi/mxml-rnc&quot;&gt;Project on Github&lt;/a&gt;&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_11_03_relax-ng-schema-for-adobe-flex-3.html" type="text/html" />
+    <published>03 Nov 08 00:00</published>
+  </entry>
+  <entry>
+    <id>http://www.matthias-georgi.de2008_03_03_commenting-system-with-lightweight-json-store.html</id>
+    <title type="text">Commenting system with lightweight JSON store</title>
+    <updated>03 Mar 08 00:00</updated>
+    <content type="html">&lt;p&gt;As I wrote this &lt;a href=&quot;http://www.matthias-georgi.de/shinmun.html&quot;&gt;blog engine&lt;/a&gt;, the need for a commenting system
+arose and I reflected about a small and simple commenting system with
+just a flat file JSON store. This is my solution, which can be used on
+any static page on a server with PHP support.&lt;/p&gt;
+
+&lt;h3&gt;JQuery Frontend&lt;/h3&gt;
+
+&lt;p&gt;First of all we need a form, which will post the data to the &lt;em&gt;PHP&lt;/em&gt;
+script. The comment rendering is done by my own &lt;em&gt;Javascript&lt;/em&gt;
+templating system, which I will explain in a seperate post. For now we
+focus on the task of posting a form and saving it to our &lt;em&gt;JSON&lt;/em&gt; store.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;comment-form&amp;quot;&amp;gt;
+    &amp;lt;form&amp;gt;
+      &amp;lt;input type=&amp;quot;hidden&amp;quot; name=&amp;quot;guid&amp;quot; value=&amp;quot;7ad04f10-5dd6-012b-b53c-001a92975b89&amp;quot;/&amp;gt;
+      &amp;lt;p&amp;gt;
+        &amp;lt;label&amp;gt;Name&amp;lt;/label&amp;gt;&amp;lt;br/&amp;gt;
+        &amp;lt;input type=&amp;quot;text&amp;quot; name=&amp;quot;name&amp;quot; size=&amp;quot;40&amp;quot;/&amp;gt;
+      &amp;lt;/p&amp;gt;
+      &amp;lt;p&amp;gt;
+        &amp;lt;label&amp;gt;Website&amp;lt;/label&amp;gt;&amp;lt;br/&amp;gt;
+        &amp;lt;input type=&amp;quot;text&amp;quot; name=&amp;quot;website&amp;quot;  size=&amp;quot;40&amp;quot;/&amp;gt;
+      &amp;lt;/p&amp;gt;
+      &amp;lt;p&amp;gt;
+        &amp;lt;label&amp;gt;Comment&amp;lt;/label&amp;gt;&amp;lt;br/&amp;gt;
+        &amp;lt;textarea name=&amp;quot;text&amp;quot; cols=&amp;quot;60&amp;quot; rows=&amp;quot;10&amp;quot;&amp;gt;&amp;lt;/textarea&amp;gt;
+      &amp;lt;/p&amp;gt;
+      &amp;lt;p&amp;gt;
+        &amp;lt;input type=&amp;quot;submit&amp;quot; value=&amp;quot;Post comment&amp;quot;/&amp;gt;
+      &amp;lt;/p&amp;gt;
+    &amp;lt;/form&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;My blog engine generates a guid for each post, so this will be posted
+by the form as well. Ok, let&amp;#39;s have a look at the Javascript code:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$(&amp;#39;.comment-form form&amp;#39;).ajaxForm({
+    url: Blog.root + &amp;#39;controllers/comments.php&amp;#39;,
+    type: &amp;#39;POST&amp;#39;,
+    resetForm: true,
+    beforeSubmit: function(values) {
+        if (values[1].value &amp;amp;&amp;amp; values[3].value) {
+            return true;
+        }
+        else {
+            alert(&amp;#39;Please enter name and text!&amp;#39;);
+            return false;
+        }
+    },
+    success: function(data) {
+        renderComments(data);
+    }
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This uses the &lt;a href=&quot;http://malsup.com/jquery/form/&quot;&gt;jquery-form plugin&lt;/a&gt; to submit the form via &lt;em&gt;AJAX&lt;/em&gt;,
+nothing special here, the input will be validated to have at least a
+name and comment text. After a successful comment post, the comments
+should be rendered, but this is another story.&lt;/p&gt;
+
+&lt;h3&gt;PHP Backend&lt;/h3&gt;
+
+&lt;p&gt;The backend is extremely &lt;a href=&quot;http://en.wikipedia.org/wiki/You_Ain%27t_Gonna_Need_It&quot;&gt;YAGNI&lt;/a&gt;. Comments for one post, will be
+saved in one JSON file like &lt;code&gt;comments/guid-of-the-post&lt;/code&gt;. The 4 fields
+will be encoded as json array and appended to the file. This happens
+only, if the request was a &lt;em&gt;POST&lt;/em&gt;. Finally we read the whole file and
+send it back as response.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;lt;?php
+
+$guid_pattern = &amp;quot;/^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}{0,1})$/&amp;quot;;
+$req = $_REQUEST;
+$guid = $req[&amp;#39;guid&amp;#39;];
+
+preg_match($guid_pattern, $guid) or die(&amp;quot;invalid guid&amp;quot;);
+
+$file = &amp;#39;comments/&amp;#39; . $guid;
+
+if ($_SERVER[&amp;#39;REQUEST_METHOD&amp;#39;] == &amp;#39;POST&amp;#39;) {   
+  // create a comment record
+  $record = array(date(&amp;#39;Y-m-d H:i:s&amp;#39;), 
+                  strip_tags(stripslashes($req[&amp;#39;name&amp;#39;])),
+                  strip_tags(stripslashes($req[&amp;#39;website&amp;#39;])),
+                  strip_tags(stripslashes($req[&amp;#39;text&amp;#39;])));
+
+  // encode as json string
+  $json = json_encode($record) . &amp;quot;\n&amp;quot;;
+
+  // open the comment file for appending
+  $fp = fopen($file, &amp;quot;a&amp;quot;);
+
+  // acquire a write lock
+  flock($fp, LOCK_EX);
+
+  // append the json line
+  fwrite($fp, $json);
+
+  // release lock
+  flock($fp, LOCK_UN);
+
+  // close file
+  fclose($fp);
+}
+
+if (file_exists($file)) {    
+  // open the comment file for reading
+  $fp = fopen($file, &amp;quot;r&amp;quot;);
+
+  // acquire a read lock
+  flock($fp, LOCK_SH);
+
+  // read whole file and print it out
+  echo fread($fp, filesize($file));
+
+  // release lock
+  flock($fp, LOCK_UN);
+
+  // close file
+  fclose($fp);
+}
+
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;One important thing to note is, that the comment file is not one big
+JSON array. It looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;[&amp;quot;2008-09-07 12:28:33&amp;quot;,&amp;quot;Hans&amp;quot;,&amp;quot;&amp;quot;,&amp;quot;**strong text**\n*emphasized text*&amp;quot;]
+[&amp;quot;2008-09-07 12:29:33&amp;quot;,&amp;quot;Hans&amp;quot;,&amp;quot;&amp;quot;,&amp;quot;**strong text**\n\n\n*emphasized text*&amp;quot;]
+[&amp;quot;2008-09-07 12:29:56&amp;quot;,&amp;quot;Hans&amp;quot;,&amp;quot;&amp;quot;,&amp;quot;**strong text**\n\n\n*emphasized text*&amp;quot;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For each line, we have one JSON array. This way, the &lt;em&gt;PHP&lt;/em&gt; script
+doesn&amp;#39;t need to read the whole JSON thing into memory. It just appends
+on every &lt;em&gt;POST&lt;/em&gt; one line.&lt;/p&gt;
+
+&lt;h3&gt;Escaping&lt;/h3&gt;
+
+&lt;p&gt;Some blog comments showed strange escaping behviour, so I investigated
+further. PHP has a foolproof feature called &lt;a href=&quot;http://de.php.net/manual/en/security.magicquotes.php&quot;&gt;Magic Quotes&lt;/a&gt;. It
+automatically escapes all dangerous characters from request parameters
+to protect dumb users from &lt;a href=&quot;http://en.wikipedia.org/wiki/SQL_injection&quot;&gt;SQL Injection&lt;/a&gt;. This feature is
+deprecated and in version 6.0.0 it will be removed. Nevertheless it is 
+activated in a default PHP installation.&lt;/p&gt;
+
+&lt;p&gt;To revert the escaping behaviour I have to call &lt;code&gt;stripslashes&lt;/code&gt;. Also I
+have to care about stripping HTML tags from input. So to protect from
+malicious HTML, I filter all input through &lt;code&gt;strip_tags&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Concurrency&lt;/h3&gt;
+
+&lt;p&gt;As a commenter pointed out, concurrent access can be a headache. I
+hoped, that &lt;code&gt;file_put_contents&lt;/code&gt; is an atomic function, but it is
+not. However, I use a simple file locking scheme, which is good
+enough. One caveat remains: in a multithreading environment this will
+not work reliably. But I think, most PHP installations run as CGI, so
+this will be ok.&lt;/p&gt;
+
+&lt;h3&gt;Security&lt;/h3&gt;
+
+&lt;p&gt;Seems that I had a serious security flaw in my first version. I didn&amp;#39;t
+check the guid parameter, so that you could pass a path like 
+&lt;code&gt;../../../../../../etc/group&lt;/code&gt;. Now the guid is matched against a regular
+expression, so the script is now safe.&lt;/p&gt;
+
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;With a few lines you can hook up a simple commenting system for static
+pages powered by &lt;em&gt;AJAX&lt;/em&gt; and &lt;em&gt;PHP&lt;/em&gt;. Note, that rendering of comments is
+not discussed here and happens on &lt;em&gt;Javascript&lt;/em&gt; side. &lt;/p&gt;
+
+&lt;p&gt;Read about my &lt;a href=&quot;http://www.matthias-georgi.de/patroon.html&quot;&gt;Javascript template engine&lt;/a&gt; which is used to render
+the comments.&lt;/p&gt;
+</content>
+    <link href="http://www.matthias-georgi.de2008_03_03_commenting-system-with-lightweight-json-store.html" type="text/html" />
+    <published>03 Mar 08 00:00</published>
   </entry>
 </feed>

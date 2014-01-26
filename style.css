@@ -28,7 +28,8 @@ pre {
 }
 
 .container {
-    width: 800px;
+    max-width: 600px;
+    padding: 0 20px;
     margin: 0 auto;
 }
 
@@ -53,6 +54,11 @@ h1 {
 
 h2 { font-size: 1.2em; }
 h3,h4 { font-size: 1em; }
+
+.article {
+    margin-bottom: 100px;
+}
+
 /*
 
 Zenburn style from voldmar.ru (c) Vladimir Epifanov <voldmar@voldmar.ru>
