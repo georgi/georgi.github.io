@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+    "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+    <head>
+        <title>
+            Matthias Georgi
+        </title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom 1.0">
+        <link rel="stylesheet" media="screen" type="text/css" href="style.css">
+        <script src="script.js">
+            
+        </script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <h2 id="header">
+                <a href="/">
+                    Matthias Georgi
+                </a>
+            </h2>
+            <div class="content">
+                <div class="article">
+                    <h1>
+                        <a href="2011_06_22_vtouch-control-ableton-live-in-a-webbrowser.html">
+                            vTouch - Control Ableton Live in a Webbrowser
+                        </a>
+                    </h1>
+                    <p>VTouch is a multitouch browser frontend for Ableton Live. Inside your
+webbrowser you can control clip triggering, volume, send and return
+levels, mute, solo, record states. This works also on the network, so
+you can connect your mobile phone, iPads or android tablets easily by
+just browsing to you local webserver.</p>
+
+<p><img src="http://www.matthias-georgi.de/images/vtouch.gif" alt="vTouch"></p>
+
+<h3>Screencast</h3>
+
+<iframe width="425" height="349" src="http://www.youtube.com/embed/qFmiIcgRIao" frameborder="0" allowfullscreen></iframe>
+
+<h3>About the Hack</h3>
+
+<p>Ableton Live is an digital audio workstation, which is well suited for
+live performances. Lots of parameters can be manipulated, midi or
+audio loops can be triggered. Unfortunately it is cumbersome to use
+this software with a touch device. A user interface specifically
+designed to be used on multitouch devices, which is also portable
+across platforms, offers many benefits and possibilities. Imagine a
+whole band jamming on iPads with ohne live setup over a wireless
+network.</p>
+
+<h3>Technology used</h3>
+
+<p>The frontend is rendered on HTML5 Canvas and communicates with a
+nodejs server via websockets. On the backend the webserver talks to a
+running ableton live instance and sends updates to all connected
+clients.</p>
+
+<p>The canvas frontend is supported on all modern browsers including
+apple mobile safari and android browsers. We created a small widget
+library named canvas.ui to take care of multitouch events, rendering
+and layout management.</p>
+
+                </div>
+                <div class="article">
+                    <h1>
+                        <a href="2011_06_11_emacs-dark-theme.html">
+                            Emacs Dark Theme
+                        </a>
+                    </h1>
+                    <p>Recently I updated my Emacs setup and decided to go for a more minimal
+color theme. Especially on long coding nights you want a theme without
+distracting colors.</p>
+
+<p><img src="http://www.matthias-georgi.de/images/emacs-dark-theme.png" alt="Emacs dark theme"></p>
+
+<h3>Configuration</h3>
+
+<p>Just paste this code into your emacs condiguration:</p>
+
+<pre><code> (set-face-attribute &#39;default nil
+                     :background &quot;grey20&quot;
+                     :foreground &quot;grey90&quot;)
+
+ (set-face-attribute &#39;modeline nil
+                     :background &quot;grey10&quot;
+                     :foreground &quot;grey90&quot;)
+
+ (set-face-attribute &#39;cursor nil
+                     :background &quot;white&quot;)
+
+ (set-face-attribute &#39;font-lock-builtin-face nil
+                     :foreground &quot;grey60&quot;)
+
+ (set-face-attribute &#39;font-lock-comment-face nil
+                     :foreground &quot;grey60&quot;)
+
+ (set-face-attribute &#39;font-lock-constant-face nil
+                     :foreground &quot;grey60&quot;)
+
+ (set-face-attribute &#39;font-lock-keyword-face nil
+                     :foreground &quot;white&quot;)
+
+ (set-face-attribute &#39;font-lock-string-face nil
+                     :foreground &quot;white&quot;)
+
+ (set-face-attribute &#39;font-lock-variable-name-face nil
+                     :foreground &quot;lightblue&quot;)
+
+ (set-face-attribute &#39;font-lock-function-name-face nil
+                     :foreground &quot;lightblue&quot;)
+
+ (set-face-attribute &#39;region nil
+                     :background &quot;#111&quot;)                    
+</code></pre>
+
+<h3>Additional faces</h3>
+
+<p>If you use speedbar or elscreen, you can set additional faces:</p>
+
+<pre><code>(set-face-attribute &#39;speedbar-file-face nil
+                    :foreground &quot;white&quot;)
+
+(set-face-attribute &#39;elscreen-tab-background-face nil
+                    :background &quot;grey10&quot;
+                    :foreground &quot;grey90&quot;)
+
+(set-face-attribute &#39;elscreen-tab-control-face nil
+                    :background &quot;grey20&quot;
+                    :foreground &quot;grey90&quot;)
+
+(set-face-attribute &#39;elscreen-tab-current-screen-face nil
+                    :background &quot;grey20&quot;
+                    :foreground &quot;grey90&quot;)
+
+(set-face-attribute &#39;elscreen-tab-other-screen-face nil
+                    :background &quot;grey30&quot;
+                    :foreground &quot;grey60&quot;)
+</code></pre>
+
+                </div>
+                <div class="article">
+                    <h1>
+                        <a href="2009_07_23_viewing-ri-in-a-web-browser.html">
+                            Viewing RI in a web browser
+                        </a>
+                    </h1>
+                    <p>I&#39;m a big fan of the Firefox keyword search. For example I have
+keywords for <a href="http://dict.leo.org">LEO</a>, <a href="http://en.wikipedia.org">Wikipedia</a> and <a href="http://www.nongnu.org/man2html">Man pages</a>. Sometimes I
+want to look up API documentation in Ruby and typing <code>ri camelize</code>
+into the address bar and viewing the documentation as web page seems
+to be quite natural for me. So I wrote a quick and dirty cgi, which
+calls RI and outputs HTML.</p>
+
+<h3>CGI script</h3>
+
+<p>I&#39;ve put the following code in file named
+<code>/usr/lib/cgi-bin/ri.b</code>. This is the default location for cgi scripts
+on my system for Apache.</p>
+
+<pre><code>#!/usr/bin/env ruby
+
+require &#39;rdoc/ri/ri_driver&#39;
+require &#39;rubygems&#39;
+
+print &quot;Content-type: text/html\r\n\r\n&quot;
+
+ARGV &lt;&lt; &#39;-f&#39; &lt;&lt; &#39;html&#39;
+
+ri = RiDriver.new
+
+print &#39;&lt;html&gt;&lt;body style=&quot;width:600px; margin:auto; padding:20px&quot;&gt;&#39;
+ri.process_args
+print &#39;&lt;/body&gt;&lt;/html&gt;&#39;
+</code></pre>
+
+<p>This script does the same thing as if you typed <code>ri somequery -f
+html</code>. I put some HTML around it to give it some style, but that&#39;s it.</p>
+
+<h3>The Keyword Search</h3>
+
+<p>So I want to type <code>ri String.capitalize</code> and the browser should send a
+request to <code>http://localhost/cgi-bin/ri.rb?String.capitalize</code>.</p>
+
+<p>Just add a new bookmark and give it the keyword <code>ri</code> and use as url
+this one:</p>
+
+<pre><code> http://localhost/cgi-bin/ri.rb?%s
+</code></pre>
+
+<p>Now we&#39;re done. One thing I would like to improve is to add hyperlinks
+to the output. For example viewing the documentation of a class brings
+up all documented methods. Each of them should be a link to the actual
+documentation. Probably some monkey patching on the <a href="http://rdoc.rubyforge.org/classes/RDoc/RI/HtmlFormatter.html">HtmlFormatter</a>
+class would do the job.</p>
+
+                </div>
+                <a rel="next" href="page-3.html">
+                    Next entries
+                </a>
+            </div>
+        </div>
+    </body>
+</html>
